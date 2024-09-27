@@ -922,6 +922,10 @@ set
 ;
 $endif.altFeEmiFac
 
+$ifthen.limitSolidsFossilRegi not %cm_limitSolidsFossilRegi% == "off"
+  set limitSolidsFossilRegi(ext_regi) "set to store regions that should have solids fossil upper bound limited by previous year" / %cm_limitSolidsFossilRegi% /;
+$endif.limitSolidsFossilRegi
+
 ***###############################################################################
 ***######################## R SECTION START (MODULES) ###############################
 *** THIS CODE IS CREATED AUTOMATICALLY, DO NOT MODIFY THESE LINES DIRECTLY

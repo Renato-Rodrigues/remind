@@ -1772,6 +1772,9 @@ $setglobal c_seFeSectorShareDevUnit  share !! def = share  !! regexp = share|ene
 *** *JH/LB* Activate MOFEX partial fossil fuel extraction cost minimization model
 *** * Warning: Use a well-converged run since the model uses vm_prodPe from the input GDX
 $setGlobal cm_MOFEX  off        !! def = off  !! regexp = off|on
+*** cm_limitSolidsFossilRegi off   !! def=off
+*** ext_regi value, e.g. "EUR_regi, USA"   "solids fossil in industry and buildings for regions within EUR_regi and USA are forced to be monotonuosly decreasing after 2020 or cm_startyear."
+$setGlobal cm_limitSolidsFossilRegi off
 *** cm_Full_Integration
 ***    use "on" to treat wind and solar as fully dispatchable electricity production technologies
 $setGlobal cm_Full_Integration  off     !! def = off  !! regexp = off|on
