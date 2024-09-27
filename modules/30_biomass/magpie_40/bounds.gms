@@ -15,8 +15,8 @@
 *' To avoid infeasibilities it was necessary to modify the initial vintage structure for bioeths.
 *' FS: changed the bounds to start only in 2045 in REMIND-EU to rule out some infeasibilities with EDGE-T
 *'
-vm_fuExtr.up(t,regi,"pebios","5")$(t.val ge 2045)  = p30_datapebio(regi,"pebios","5","maxprod",t);
-vm_fuExtr.up(t,regi,"pebioil","5")$(t.val ge 2045) = p30_datapebio(regi,"pebioil","5","maxprod",t);
+vm_fuExtr.up(t,regi,"pebios","5")$(t.val ge 2030)  = p30_datapebio(regi,"pebios","5","maxprod",t);
+vm_fuExtr.up(t,regi,"pebioil","5")$(t.val ge 2030) = p30_datapebio(regi,"pebioil","5","maxprod",t);
 
 if(cm_1stgen_phaseout=0,
     vm_fuExtr.lo(t,regi,"pebios","5")$(t.val ge 2045)  = 0.9 * p30_datapebio(regi,"pebios","5","maxprod",t);
