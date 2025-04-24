@@ -228,7 +228,7 @@ $ifthen.import_nzero_EU "%cm_import_EU%" == "nzero"
 *** E-fuels (e-liquids) trade:
 ***   All regions (EU-27 and UKI) import proportionally to their 2050 FE|Transport|Pass|Aviation + FE|Industry|Chemicals|Liquids in the reference NPi run.
 ***   Exporting regions: SSA, LAM and MEA (one-third each)
-***   Import quantities: exponential increase from 1.2 TWh/yr by 2030 to 100 TWh/yr by 2050 for Germany
+***   Import quantities: exponential increase from 0.3 TWh/yr by 2030 to 100 TWh/yr by 2050 for Germany
 
 *** defining Germany seliqsyn trade import flows
   loop(regi$(sameas(regi,"SSA") or sameas(regi,"LAM") or sameas(regi,"MEA")), 
@@ -239,7 +239,7 @@ $ifthen.import_nzero_EU "%cm_import_EU%" == "nzero"
       * 1/3; !! each supplier region provide one-third of total imports
 *** 2030 
     p24_seTradeCapacity("2030",regi,regi2,"seliqsyn") = 
-      ((1.2 / sm_TWa_2_TWh) / p24_aviationAndChemicalsFEShareInRegion("2050","EUR_regi","DEU") ) 
+      ((0.3 / sm_TWa_2_TWh) / p24_aviationAndChemicalsFEShareInRegion("2050","EUR_regi","DEU") ) 
       * p24_aviationAndChemicalsFEShareInRegion("2050","EUR_regi",regi2) 
       * 1/3;
   );
@@ -294,7 +294,7 @@ $ifthen.import_nzero_bio_EU "%cm_import_EU%" == "nzero_bio"
       * 1/3; !! each supplier region provide one-third of total imports
 *** 2030 
     p24_seTradeCapacity("2030",regi,regi2,"seliqsyn") = 
-      ( (0.6 / sm_TWa_2_TWh) / p24_aviationAndChemicalsFEShareInRegion("2050","EUR_regi","DEU") )
+      ( (0.2 / sm_TWa_2_TWh) / p24_aviationAndChemicalsFEShareInRegion("2050","EUR_regi","DEU") )
       * p24_aviationAndChemicalsFEShareInRegion("2050","EUR_regi",regi2) 
       * 1/3; 
   );
