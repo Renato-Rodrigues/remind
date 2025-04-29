@@ -217,16 +217,6 @@ xx_WP1_Nzero;0,ecemf;bioftcrec 0.6;EUR_regi;;;;;;se_trade;nzero;scenario;EU27_bi
 xx_WP1_NZero-LimBio;0,ecemf;bioftcrec 0.6;EUR_regi;;;;;;se_trade;nzero;scenario;EU27_bio7, GLO_bio100;regiCarbonPrice;2020.2030.EU27_regi.all.year.netGHG_LULUCFGrassi_intraRegBunker 2.092, 2020.2030.DEU.all.year.netGHG_noLULUCF_noBunkers 0.441, (2035.2050.EU27_regi, 2035.2045.DEU, 2020.2050.UKI).all.year.netGHG_LULUCFGrassi 0.0001;GLO 0.004;on;on;EUR_regi, NEU_regi;Mix4ICEban;2050.GLO 0.9;GLO.elh2.a 0.2, GLO.elh2.b 20, EUR_regi.elh2.a 0.15, EUR_regi.elh2.b 40;;;;;;;10;./config/regionmapping_21_EU11.csv;./config/extramapping_EU27.csv;rcp20;9;globallyOptimal;650;functionalForm;100;2055;9;1;NDC;2;2030;xx_WP1_Nzero;xx_WP1_Npi;xx_WP1_Npi;;GLO 20;;;;;xx_WP1_Npi
 xx_WP1_NZero-LimCCS;0,ecemf;bioftcrec 0.6;EUR_regi;;;;;;se_trade;nzero;scenario;EU27_bio7p5, EU28_CCS250Mt, GLO_CCS2Gt;regiCarbonPrice;2020.2030.EU27_regi.all.year.netGHG_LULUCFGrassi_intraRegBunker 2.092, 2020.2030.DEU.all.year.netGHG_noLULUCF_noBunkers 0.441, (2035.2050.EU27_regi, 2035.2045.DEU, 2020.2050.UKI).all.year.netGHG_LULUCFGrassi 0.0001;GLO 0.004;on;on;EUR_regi, NEU_regi;Mix4ICEban;2050.GLO 0.9;GLO.elh2.a 0.2, GLO.elh2.b 20, EUR_regi.elh2.a 0.15, EUR_regi.elh2.b 40;;;;;;;10;./config/regionmapping_21_EU11.csv;./config/extramapping_EU27.csv;rcp20;9;globallyOptimal;650;functionalForm;100;2055;9;1;NDC;2;2030;xx_WP1_Nzero;xx_WP1_Npi;xx_WP1_Npi;;GLO 20;;;;;xx_WP1_Npi
 xx_WP1_NZero-LimNuclear;0,ecemf;bioftcrec 0.6;EUR_regi;;;;;;se_trade;nzero;scenario;EU27_bio7p5;regiCarbonPrice;2020.2030.EU27_regi.all.year.netGHG_LULUCFGrassi_intraRegBunker 2.092, 2020.2030.DEU.all.year.netGHG_noLULUCF_noBunkers 0.441, (2035.2050.EU27_regi, 2035.2045.DEU, 2020.2050.UKI).all.year.netGHG_LULUCFGrassi 0.0001;GLO 0.004;on;on;EUR_regi, NEU_regi;Mix4ICEban;2050.GLO 0.9;GLO.elh2.a 0.2, GLO.elh2.b 20, EUR_regi.elh2.a 0.15, EUR_regi.elh2.b 40;;;;;;;10;./config/regionmapping_21_EU11.csv;./config/extramapping_EU27.csv;rcp20;9;globallyOptimal;650;functionalForm;100;2055;9;1;NDC;2;2030;xx_WP1_Nzero;xx_WP1_Npi;xx_WP1_Npi;;GLO 20;;;5;ENC,EWN,ECS,ESC,ECE,FRA,DEU,UKI,ESW;xx_WP1_Npi
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 # Test Runs;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 xx_Npi_DEU;0,DEUtest;;EUR_regi;;;;;;;;;;regiCarbonPrice;;;on;on;EUR_regi, NEU_regi;Mix1;;;;;testOneRegi;;DEU;1;1;./config/regionmapping_21_EU11.csv;./config/extramapping_EU27.csv;rcp45;3;;0;NPi;;;9;1;NPi2018;3;2005;;;;Npi;;;;;;
 xx_Npi_IND;0,INDtest;;;;;;;;;;;;regiCarbonPrice;;;on;on;EUR_regi, NEU_regi;Mix1;;;;;testOneRegi;;IND;1;1;./config/regionmapping_21_EU11.csv;./config/extramapping_EU27.csv;rcp45;3;;0;NPi;;;9;1;NPi2018;3;2005;;;;Npi;;;;;;
