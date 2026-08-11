@@ -351,10 +351,10 @@ elseif (cm_taxCO2_regiDiff = 1) or (cm_taxCO2_regiDiff = 2), !! initialSpread10 
 elseif (cm_taxCO2_regiDiff = 5) or (cm_taxCO2_regiDiff = 6) or (cm_taxCO2_regiDiff = 7) or (cm_taxCO2_regiDiff = 8) or (cm_taxCO2_regiDiff = 10), !! ScenarioMIP2035, ScenarioMIP2050, ScenarioMIP2070, ScenarioMIP2100, or manual
   !! Re-compute p45_regiDiff_initialRatio based on regional carbon prices in p45_regiDiff_startYr
   p45_regiDiff_initialRatio(regi) = sum(ttot$(ttot.val eq p45_regiDiff_startYr(regi)), p45_taxCO2eq_path_gdx_ref(ttot,regi) / p45_taxCO2eq_anchor(ttot));
+elseif cm_taxCO2_regiDiff = 11, !! feasibility (PFM coupling)
+  !! Nothing to re-compute: with cm_taxCO2_regiDiff = 11 the ratio is not built from gdx_ref prices or a convergence year, it comes from phi, set in Step III.0 of
+  !! datainput.gms and refreshed each coupling iteration by presolve.gms. The value must still be listed here or the else-branch aborts the run.
 else
-  elseif cm_taxCO2_regiDiff = 11,
-  *** cm_taxCO2_regiDiff = 11 (PFM political feasibility): the ratio is NOT built from gdx_ref prices or a convergence year - it comes from phi, set in Step III.0 and
-  *** refreshed each coupling iteration by presolve.gms. Nothing to compute here, but the value must be listed or the guard below aborts the run.
   abort "please choose a valid scenario via cm_taxCO2_regiDiff or set cm_taxCO2_regiDiff to manual"
 );
 $else.taxCO2regiDiff3
