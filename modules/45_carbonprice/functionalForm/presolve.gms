@@ -36,7 +36,7 @@ if(cm_taxCO2_regiDiff = 11,
 *** the rest of the run - phi is FROZEN at its converged value, never reset to 1.
 *** The R side reports "first call" as a huge delta, so the loop can never stop on
 *** the first PFM iteration.
-  if((pfmIter(iteration)) and (p45_pfmConverged = 0),
+  if((pfmIter(iteration)) and (pm_pfmConverged = 0),
 
 *** Track runtime, as EDGE-T does, so the coupling cost is visible in the log
     putclose runtime gyear(jnow):0:0 "-" gmonth(jnow):0:0 "-" gday(jnow):0:0 " " ghour(jnow):0:0 ":" gminute(jnow):0:0 ":" gsecond(jnow):0:0 ",iterativePFM," iteration.val:0;
@@ -86,10 +86,10 @@ if(cm_taxCO2_regiDiff = 11,
     Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmDelta_aux = p45_pfmDelta;
     p45_pfmDelta = sum(regi, p45_pfmDelta_aux(regi)) / max(1, card(regi));
     if((p45_pfmDelta > 0) and (p45_pfmDelta <= cm_pfmConvTol),
-      p45_pfmConverged = 1;
+      pm_pfmConverged = 1;
       display "PFM coupling CONVERGED - phi frozen for the remainder of the run";
     );
-    display p45_regiDiff_phi, p45_pfmDelta, p45_pfmConverged, p45_pfmCallCount;
+    display p45_regiDiff_phi, p45_pfmDelta, pm_pfmConverged, p45_pfmCallCount;
   );
 
 *** --- apply phi, EVERY iteration ---------------------------------------------
@@ -135,7 +135,7 @@ if(cm_taxCO2_regiDiff = 11,
 *** "uncoupled" run wearing a mild-progression label. Fail instead.
   if(cm_pfmBindMode = 3,
     if(smax((t,regi)$(t.val ge cm_startyear), p45_pfmMPPrice(t,regi)) <= 0,
-      p45_pfmInfesCode = 3;
+      pm_pfmInfesCode = 3;
     else
       pm_taxCO2eq(t,regi)$(t.val ge cm_startyear) = p45_pfmMPPrice(t,regi);
       display p45_pfmMPPrice;
@@ -149,20 +149,20 @@ if(cm_taxCO2_regiDiff = 11,
 *** iteration does not condemn the run - and one clean iteration resets it.
   p45_pfmMaxPrice = smax((t,regi)$(t.val ge cm_startyear), pm_taxCO2eq(t,regi));
   p45_pfmRescaleHist(iteration) = p45_factorRescale_taxCO2_Funneled(iteration);
-  p45_pfmInfesCode = 0;
+  pm_pfmInfesCode = 0;
 
 *** (1) Price explosion. The SILENT failure: the solve succeeds and the numbers look
 *** like results. This is the mode this run family has already hit.
   if(p45_pfmMaxPrice > cm_pfmMaxPrice,
-    p45_pfmInfesCode = 1;
+    pm_pfmInfesCode = 1;
   );
 
 *** (2) Budget iteration diverging: the rescale factor should approach 1 as the anchor
 *** settles. Persistently far from 1 means the budget cannot be met by rescaling, which
 *** under bind mode 2 is the expected consequence of a binding political cap.
-  if((p45_pfmInfesCode = 0) and (ord(iteration) > 5) and
+  if((pm_pfmInfesCode = 0) and (ord(iteration) > 5) and
      (abs(p45_factorRescale_taxCO2_Funneled(iteration) - 1) > 0.5),
-    p45_pfmInfesCode = 2;
+    pm_pfmInfesCode = 2;
   );
 
 *** (3) A missing or zero price bound under bind mode 2. The R side already refuses to
@@ -170,24 +170,24 @@ if(cm_taxCO2_regiDiff = 11,
 *** bound of zero would cap every price at zero and the solve would succeed, reporting
 *** a "politically infeasible" world that is really a plumbing failure. Checked against
 *** a nominal floor rather than a real price path, because P_ref is not available here.
-  if((p45_pfmInfesCode = 0) and (cm_pfmBindMode = 2),
+  if((pm_pfmInfesCode = 0) and (cm_pfmBindMode = 2),
     if(smin((t,regi)$(t.val ge cm_startyear), p45_pfmPriceBound(t,regi)) <= 0,
-      p45_pfmInfesCode = 3;
+      pm_pfmInfesCode = 3;
     );
   );
 
-  if(p45_pfmInfesCode > 0,
+  if(pm_pfmInfesCode > 0,
     p45_pfmInfesCount = p45_pfmInfesCount + 1;
   else
     p45_pfmInfesCount = 0;
   );
 
   if(p45_pfmInfesCount >= cm_pfmInfesPatience,
-    display "PFM COUPLING INFEASIBLE - see p45_pfmInfesCode (1 price explosion, 2 budget divergence, 3 bound below current policy)";
-    display p45_pfmInfesCode, p45_pfmMaxPrice, p45_pfmInfesCount;
-    execute_unload "pfm_infeasible.gdx", p45_pfmInfesCode, p45_pfmMaxPrice, p45_pfmInfesCount, pm_taxCO2eq, p45_pfmPriceBound, p45_regiDiff_phi;
+    display "PFM COUPLING INFEASIBLE - see pm_pfmInfesCode (1 price explosion, 2 budget divergence, 3 bound below current policy)";
+    display pm_pfmInfesCode, p45_pfmMaxPrice, p45_pfmInfesCount;
+    execute_unload "pfm_infeasible.gdx", pm_pfmInfesCode, p45_pfmMaxPrice, p45_pfmInfesCount, pm_taxCO2eq, p45_pfmPriceBound, p45_regiDiff_phi;
   );
-  display p45_pfmMaxPrice, p45_pfmInfesCode;
+  display p45_pfmMaxPrice, pm_pfmInfesCode;
 
 *** --- record this iteration ---------------------------------------------------
 *** Written EVERY iteration, not only coupling ones, so the trace shows what happens
@@ -196,8 +196,8 @@ if(cm_taxCO2_regiDiff = 11,
   p45_pfmPhi_iter(iteration,regi) = p45_regiDiff_phi(regi);
   p45_pfmDelta_iter(iteration) = p45_pfmDelta;
   p45_pfmMaxPrice_iter(iteration) = p45_pfmMaxPrice;
-  p45_pfmInfes_iter(iteration) = p45_pfmInfesCode;
-  p45_pfmConverged_iter(iteration) = p45_pfmConverged;
+  p45_pfmInfes_iter(iteration) = pm_pfmInfesCode;
+  p45_pfmConverged_iter(iteration) = pm_pfmConverged;
   p45_pfmAnchor_iter(iteration) = sum(t$(t.val eq 2050), p45_taxCO2eq_anchor(t));
   p45_pfmPriceMean_iter(iteration,regi) =
     sum(t$(t.val ge cm_startyear), pm_taxCO2eq(t,regi))

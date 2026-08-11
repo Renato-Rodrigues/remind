@@ -52,7 +52,6 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
 *** PFM convergence. The coupling is a fixed point in phi; it has converged when a further PFM call stops changing phi. Once converged the R call is skipped for the rest of the run - phi is FROZEN, not reset, and keeps being applied.
   p45_pfmDelta_aux(all_regi)   "max abs change in phi since the previous PFM call, as loaded from the gdx"
   p45_pfmDelta                 "the same, as a scalar"
-  p45_pfmConverged             "1 once the phi delta has fallen below cm_pfmConvTol"
   p45_pfmCallCount             "number of PFM calls made, for the log"
   p45_pfmPriceBound(ttot,all_regi) "politically feasible absolute carbon price, US$/tCO2 (bind mode 2)"
   p45_pfmPriceBound_aux(ttot,all_regi) "as loaded from the PFM gdx"
@@ -63,7 +62,6 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
 *** PFM Infeasibility detection
   p45_pfmMaxPrice              "highest carbon price anywhere in the current solution, US$/tCO2"
   p45_pfmRescaleHist(iteration) "budget-iteration rescale factor, kept to detect divergence"
-  p45_pfmInfesCode             "0 ok | 1 price explosion | 2 budget iteration diverging | 3 political cap below the reference price"
   p45_pfmInfesCount            "consecutive iterations flagged, so one noisy iteration is not a verdict"
 
 *** PFM per-iteration tracking (for debugging and diagnostics)

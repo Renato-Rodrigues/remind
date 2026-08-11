@@ -479,12 +479,12 @@ $endIf.internalizeDamages
 *** so Nash converging while phi is still drifting means the run has settled on a carbon price the political layer no longer agrees with. 
 *** Blocking convergence here is what makes the two loops close TOGETHER rather than separately.
 if(cm_taxCO2_regiDiff = 11,
-  if(p45_pfmConverged = 0,
+  if(pm_pfmConverged = 0,
     s80_bool = 0;
     p80_messageShow("pfm") = YES;
   );
 *** An infeasible coupling must never be reported as a converged run.
-  if(p45_pfmInfesCode > 0,
+  if(pm_pfmInfesCode > 0,
     s80_bool = 0;
     p80_messageShow("pfm") = YES;
   );
@@ -515,7 +515,7 @@ display "Reasons for non-convergence in this iteration (if not yet converged)";
         );
         if(sameas(convMessage80, "pfm"),
           display "#### x.) PFM political-feasibility coupling has not converged: phi is still changing between coupling calls, or an infeasibility was flagged.";
-          display "#### Check p45_pfmDelta against cm_pfmConvTol, and p45_pfmInfesCode (1 price explosion, 2 budget-iteration divergence, 3 missing price bound).";
+          display "#### Check p45_pfmDelta against cm_pfmConvTol, and pm_pfmInfesCode (1 price explosion, 2 budget-iteration divergence, 3 missing price bound).";
           display "#### Per-iteration traces: p45_pfmDelta_iter, p45_pfmPhi_iter, p45_pfmMaxPrice_iter, p45_pfmInfes_iter.";
         );
         if(sameas(convMessage80, "surplus"),
