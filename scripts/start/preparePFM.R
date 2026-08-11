@@ -58,43 +58,40 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # only demand an answer when the folder is genuinely ambiguous.
   say("looking for PFM data under '", normalizePath(sourceDir, mustWork = FALSE),
       "' (cfg$pfm$source = '", sourceDir, "', wd = '", getwd(), "')")
-  outDir <- file.path(sourceDir, "output")
-  if (!dir.exists(outDir)) {
-    stop("preparePFM: no 'output' directory under '", sourceDir, "'. cfg$pfm$source ",
-         "must point at the PARENT of output/, not at output/ itself.")
-  }
-  # A FLAT layout is also accepted: the Run-Group's files sitting directly in
-  # output/ rather than in output/<group>/. Copying the contents of a group folder
-  # instead of the folder itself is an easy and reasonable thing to do, and there is
-  # no reason to make it an error.
-  if (file.exists(file.path(outDir, "selected-models-psm.yml"))) {
-    say("flat layout: Run-Group files found directly in '", outDir, "'")
+
+  # Where the Run-Group lives. Two layouts, in order of preference:
+  #   1. <source>/            - the files sitting directly in pfm-data (simplest)
+  #   2. <source>/<group>/    - one or more Run-Group directories side by side
+  # A Run-Group is identified by selected-models-psm.yml, not by its name, so neither
+  # layout needs the group spelled out anywhere unless there are several to choose from.
+  marker <- "selected-models-psm.yml"
+  group <- gv("group", "PFM_GROUP", "")
+
+  if (nzchar(group)) {
+    src <- file.path(sourceDir, group)
+    if (!file.exists(file.path(src, marker))) {
+      stop("preparePFM: cfg$pfm$group = '", group, "' but no ", marker,
+           " at '", src, "'.")
+    }
+  } else if (file.exists(file.path(sourceDir, marker))) {
+    src <- sourceDir
     group <- basename(normalizePath(sourceDir, mustWork = FALSE))
-    src <- outDir
+    say("layout: files directly in the source folder")
   } else {
-    src <- NULL
-  }
-  group <- if (!is.null(src)) group else gv("group", "PFM_GROUP", "")
-  if (is.null(src) && !nzchar(group)) {
-    cand <- list.dirs(outDir, full.names = FALSE, recursive = FALSE)
-    cand <- setdiff(cand, c("panels", "panel-cache", ""))
+    cand <- list.dirs(sourceDir, full.names = FALSE, recursive = FALSE)
     cand <- cand[vapply(cand, function(g)
-      file.exists(file.path(outDir, g, "selected-models-psm.yml")), logical(1))]
+      file.exists(file.path(sourceDir, g, marker)), logical(1))]
     if (length(cand) == 1L) {
       group <- cand
-      say("Run-Group auto-detected: ", group)
-    } else if (!length(cand)) {
-      stop("preparePFM: no PFM Run-Group found under '", outDir, "' (looked for a ",
-           "directory containing selected-models-psm.yml).")
-    } else {
-      stop("preparePFM: ", length(cand), " Run-Groups under '", outDir, "' (",
+      src <- file.path(sourceDir, group)
+      say("layout: Run-Group auto-detected: ", group)
+    } else if (length(cand) > 1L) {
+      stop("preparePFM: ", length(cand), " Run-Groups in '", sourceDir, "' (",
            paste(cand, collapse = ", "), "). Set cfg$pfm$group to choose.")
-    }
-  }
-  if (is.null(src)) {
-    src <- file.path(outDir, group)
-    if (!dir.exists(src)) {
-      stop("preparePFM: Run-Group '", group, "' not found at '", src, "'.")
+    } else {
+      stop("preparePFM: no PFM Run-Group found. Looked for '", marker, "' in '",
+           sourceDir, "' and in each directory directly under it. ",
+           "cfg$pfm$source is currently '", sourceDir, "'.")
     }
   }
 
@@ -120,12 +117,22 @@ preparePFM <- function(cfg, verbose = TRUE) {
   mf <- jsonlite::read_json(file.path(dest, "manifest.json"))
   panel <- paste0("panel_", mf$panel_hash, ".rds")
   # panels/ sits beside the group in the nested layout, and inside it in the flat one.
-  panelSrc <- file.path(sourceDir, "output", "panels", panel)
-  if (!file.exists(panelSrc)) panelSrc <- file.path(src, "panels", panel)
-  if (!file.exists(panelSrc)) {
-    stop("preparePFM: panel '", panel, "' not found at ", panelSrc,
+  # Exactly ONE panel is ever needed - the one named by panel_hash in manifest.json -
+  # so a panels/ folder holding a single file is optional ceremony. Accept it flat
+  # beside the other artifacts first, then the panels/ subfolder for a store copied
+  # straight from a pfm Run-Group.
+  panelCand <- c(file.path(src, panel),
+                 file.path(sourceDir, panel),
+                 file.path(src, "panels", panel),
+                 file.path(sourceDir, "panels", panel))
+  panelSrc <- panelCand[file.exists(panelCand)][1]
+  if (is.na(panelSrc)) {
+    stop("preparePFM: panel '", panel, "' not found in any of: ",
+         paste(panelCand, collapse = ", "),
          " - the Run-Group and the panel store are out of sync.")
   }
+  # In the RUN folder it always lands in pfm/panels/, because that is where
+  # iterativePFM(modelDir = "pfm") looks. Only the SOURCE layout is flexible.
   dir.create(file.path(dest, "panels"), showWarnings = FALSE)
   file.copy(panelSrc, file.path(dest, "panels", panel), overwrite = TRUE)
 
