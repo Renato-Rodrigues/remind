@@ -25,8 +25,6 @@
 *** carbon budget is met and politics only redistributes WHERE abatement happens.
 *** ---------------------------------------------------------------------------
 
-file pfmcfg / "pfm-coupling-runtime.yml" /;
-
 if(cm_taxCO2_regiDiff = 11,
 
 *** --- the coupling call, skipped once phi has converged -----------------------

@@ -151,6 +151,14 @@ display p45_gdppcap_PPP;
 *** Numerical value reflects current GDP per capita levels in developed countries
 s45_regiDiff_gdpThreshold = 50;
 
+*** initialize PFM coupling parameters and set runtime handshake file
+file pfmcfg / "pfm-coupling-runtime.yml" /;
+p45_pfmCallCount = 0;
+p45_pfmInfesCount = 0;
+p45_pfmDelta = 0;
+p45_pfmMaxPrice = 0;
+p45_factorRescale_taxCO2_Funneled(iteration) = 1;
+
 *** Step III.0: Political-feasibility shares (cm_taxCO2_regiDiff = 11). Defaults give an uncoupled run (phi = 1, lambda = 0), so a missing or partial input file can only ever weaken the constraint, never silently strengthen it.
 p45_regiDiff_phi(regi) = 1;
 p45_regiDiff_lambda(regi) = 0;
