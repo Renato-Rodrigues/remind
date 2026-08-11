@@ -57,6 +57,8 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
   p45_pfmPriceBound(ttot,all_regi) "politically feasible absolute carbon price, US$/tCO2 (bind mode 2)"
   p45_pfmPriceBound_aux(ttot,all_regi) "as loaded from the PFM gdx"
   p45_pfmBinds(ttot,all_regi)  "1 where the political cap is the binding constraint"
+  p45_pfmMPPrice(ttot,all_regi)     "mild-progression carbon price, US$/tCO2 (bind mode 3)"
+  p45_pfmMPPrice_aux(ttot,all_regi) "as loaded from the PFM gdx"
 
 *** PFM Infeasibility detection
   p45_pfmMaxPrice              "highest carbon price anywhere in the current solution, US$/tCO2"

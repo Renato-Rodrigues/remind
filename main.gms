@@ -1438,13 +1438,12 @@ $setglobal c_magpieIter  20,24,28,32     !! def = "20,24,28,32"  !! This regular
 $setglobal c_edgeTransportIter 10,12,14,16,18,20,22,24,27,30,33,36,39,42,45,50,55,60,65,70,75,80,85,90,95   !! def = "10,12,14,16,18,20,22,24,27,30,33,36,39,42,45,50,55,60,65,70,75,80,85,90,95" 
 
 *' c_pfmIter  "Nash iterations in which the PFM political-feasibility layer runs"
-*'
 *' Only used with cm_taxCO2_regiDiff = 11. 
 *' In these iterations REMIND hands its current energy-system state to the PFM/PSM feasibility model, which recomputes each region's
 *' political feasibility share phi and writes it back through a gdx. 
 *' Between these iterations phi is held fixed, so the Nash solve sees a stationary carbon-price differentiation. 
 *' Start late enough that the energy system has stabilised, and leave gaps so the coupled system can settle.
-$setglobal c_pfmIter 20,24,28,32,36,40,45,50,55,60,65,70,75,80,85,90,95   !! def = "20,24,28,32,36,40,45,50,55,60,65,70,75,80,85,90,95" 
+$setglobal c_pfmIter 15,19,23,26,29,32,35,38,41,44,47,52,57,62,67,72,77,82,87,92   !! def = "15,19,23,26,29,32,35,38,41,44,47,52,57,62,67,72,77,82,87,92" 
 
 *** cm_pfmConvTol  PFM coupling convergence tolerance: the loop stops calling PFM once
 ***                the largest change in any region's feasibility share between two
