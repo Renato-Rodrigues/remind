@@ -51,19 +51,31 @@ preparePFM <- function(cfg, verbose = TRUE) {
   if (!coupled) return(invisible(FALSE))
 
   dest <- file.path(cfg$results_folder, "pfm")
-  dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
   # Which Run-Group? Normally there is exactly one prepared in pfm-data, so asking
   # the user to name it again is asking them to repeat a decision already made when
   # the folder was assembled - and to keep it in sync forever after. Auto-detect, and
   # only demand an answer when the folder is genuinely ambiguous.
+  say("looking for PFM data under '", normalizePath(sourceDir, mustWork = FALSE),
+      "' (cfg$pfm$source = '", sourceDir, "', wd = '", getwd(), "')")
   outDir <- file.path(sourceDir, "output")
   if (!dir.exists(outDir)) {
     stop("preparePFM: no 'output' directory under '", sourceDir, "'. cfg$pfm$source ",
          "must point at the PARENT of output/, not at output/ itself.")
   }
-  group <- gv("group", "PFM_GROUP", "")
-  if (!nzchar(group)) {
+  # A FLAT layout is also accepted: the Run-Group's files sitting directly in
+  # output/ rather than in output/<group>/. Copying the contents of a group folder
+  # instead of the folder itself is an easy and reasonable thing to do, and there is
+  # no reason to make it an error.
+  if (file.exists(file.path(outDir, "selected-models-psm.yml"))) {
+    say("flat layout: Run-Group files found directly in '", outDir, "'")
+    group <- basename(normalizePath(sourceDir, mustWork = FALSE))
+    src <- outDir
+  } else {
+    src <- NULL
+  }
+  group <- if (!is.null(src)) group else gv("group", "PFM_GROUP", "")
+  if (is.null(src) && !nzchar(group)) {
     cand <- list.dirs(outDir, full.names = FALSE, recursive = FALSE)
     cand <- setdiff(cand, c("panels", "panel-cache", ""))
     cand <- cand[vapply(cand, function(g)
@@ -79,9 +91,11 @@ preparePFM <- function(cfg, verbose = TRUE) {
            paste(cand, collapse = ", "), "). Set cfg$pfm$group to choose.")
     }
   }
-  src <- file.path(outDir, group)
-  if (!dir.exists(src)) {
-    stop("preparePFM: Run-Group '", group, "' not found at '", src, "'.")
+  if (is.null(src)) {
+    src <- file.path(outDir, group)
+    if (!dir.exists(src)) {
+      stop("preparePFM: Run-Group '", group, "' not found at '", src, "'.")
+    }
   }
 
   # Only what iterativePFM() actually reads. Copying the whole Run-Group would drag in
@@ -96,12 +110,18 @@ preparePFM <- function(cfg, verbose = TRUE) {
          ". The band assignments come from analysis/psm-donor-assumptions.R; without ",
          "them the coupling refuses to run rather than reverting to phi = 1.")
   }
+  # Only now, once every source file is confirmed present. Creating the folder earlier
+  # left an EMPTY pfm/ behind on failure, which reads as "the copy worked" - the most
+  # misleading possible state to leave a run folder in.
+  dir.create(dest, recursive = TRUE, showWarnings = FALSE)
   file.copy(file.path(src, need), file.path(dest, need), overwrite = TRUE)
 
   # The panel the deployed spec was fitted on, addressed by the hash in the manifest.
   mf <- jsonlite::read_json(file.path(dest, "manifest.json"))
   panel <- paste0("panel_", mf$panel_hash, ".rds")
+  # panels/ sits beside the group in the nested layout, and inside it in the flat one.
   panelSrc <- file.path(sourceDir, "output", "panels", panel)
+  if (!file.exists(panelSrc)) panelSrc <- file.path(src, "panels", panel)
   if (!file.exists(panelSrc)) {
     stop("preparePFM: panel '", panel, "' not found at ", panelSrc,
          " - the Run-Group and the panel store are out of sync.")
