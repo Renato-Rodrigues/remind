@@ -151,6 +151,20 @@ display p45_gdppcap_PPP;
 *** Numerical value reflects current GDP per capita levels in developed countries
 s45_regiDiff_gdpThreshold = 50;
 
+*** Step III.0: Political-feasibility shares (cm_taxCO2_regiDiff = 11). Defaults give an uncoupled run (phi = 1, lambda = 0), so a missing or partial input file can only ever weaken the constraint, never silently strengthen it.
+p45_regiDiff_phi(regi) = 1;
+p45_regiDiff_lambda(regi) = 0;
+*** The include supplies the INITIAL shares only. Iteration 1 has no REMIND solution to hand the feasibility model, so phi must start from a file; 
+*** from the iterations listed in c_pfmIter onward it is replaced each time through presolve.gms via the gdx interface. A missing file means the run starts uncoupled (phi = 1) until the first coupling iteration.
+if(cm_taxCO2_regiDiff = 11,
+$ifthen exist "./modules/45_carbonprice/functionalForm/input/p45_regiDiff_feasibility.inc"
+$include "./modules/45_carbonprice/functionalForm/input/p45_regiDiff_feasibility.inc"
+$else
+  display "45_carbonprice: no p45_regiDiff_feasibility.inc found - starting from phi = 1 (uncoupled) until the first c_pfmIter iteration";
+$endif
+  display p45_regiDiff_phi, p45_regiDiff_lambda;
+);
+
 *** Step III.1: Determine p45_regiDiff_startYr and p45_regiDiff_initialRatio based on cm_taxCO2_regiDiff and cm_taxCO2_regiDiff_startyearValue
 
 $ifThen.taxCO2regiDiff1 "%cm_taxCO2_regiDiff_startyearValue%" == "endogenous"
@@ -158,6 +172,12 @@ $ifThen.taxCO2regiDiff1 "%cm_taxCO2_regiDiff_startyearValue%" == "endogenous"
 if( (cm_taxCO2_regiDiff = 0) or (cm_taxCO2_regiDiff = 3), !! none or gdpSpread
   !! Both parameters are not needed. Initialise with arbitrary values to avoid error in display statements
   p45_regiDiff_startYr(regi) = 0;
+  p45_regiDiff_initialRatio(regi) = 0;
+elseif cm_taxCO2_regiDiff = 11, !! feasibility (PFM coupling)
+  !! The ratio path is built directly from p45_regiDiff_phi/lambda in Step III.3, so the
+  !! start-year/initial-ratio machinery of the convergence scenarios is not used. The start
+  !! year is still needed as the origin of the (optional) closure clock.
+  p45_regiDiff_startYr(regi) = cm_startyear;
   p45_regiDiff_initialRatio(regi) = 0;
 elseif cm_taxCO2_regiDiff = 1, !! initialSpread10
   !! Choose p45_regiDiff_startYr to be the start year 
@@ -227,6 +247,10 @@ elseif cm_taxCO2_regiDiff = 1, !! initialSpread10
 elseif cm_taxCO2_regiDiff = 2, !! initialSpread20
   p45_regiDiff_endYr(regi) = 2070;
   p45_regiDiff_exponent(regi) = 2;
+elseif cm_taxCO2_regiDiff = 11, !! feasibility (PFM coupling)
+  !! No convergence year or exponent: the closure behaviour is governed by p45_regiDiff_lambda.
+  p45_regiDiff_endYr(regi) = 0;
+  p45_regiDiff_exponent(regi) = 0;
 elseif (cm_taxCO2_regiDiff = 5) or (cm_taxCO2_regiDiff = 6) or (cm_taxCO2_regiDiff = 7) or (cm_taxCO2_regiDiff = 8), !! ScenarioMIP2035, ScenarioMIP2050, ScenarioMIP2070, ScenarioMIP2100
   !! Guiding principle: Speed of convergence from initial ratio (regional carbon price / global anchor carbon price) to 1 
   !!                    derived from  GDP per capita levels in 2025
@@ -280,6 +304,18 @@ display  p45_regiDiff_endYr, p45_regiDiff_exponent;
 
 if(cm_taxCO2_regiDiff = 0, !! none
   p45_regiDiff_ratio(t,regi)  =  1;
+elseif cm_taxCO2_regiDiff = 11, !! feasibility (PFM coupling)
+*** Political-feasibility differentiation. Each region applies a share phi of the global anchor price, where phi comes from its ambition-gap tier below the stochastic feasibility frontier (estimated outside REMIND; see the PFM feasibility layer).
+***   ratio(t,regi) = 1 - (1 - phi(regi)) * (1 - lambda(regi))^(t - startYr)
+***   lambda = 0  =>  ratio = phi for the whole horizon: the political gap between regions PERSISTS and is never assumed away. 
+***                   This is the default and the reason this option exists - every other realization forces convergence to a uniform global price by an assumed date.
+***   lambda > 0  =>  the gap closes at the empirically estimated political adjustment speed rather than at an assumed convergence year.
+***
+*** Because the ratio multiplies the anchor, this stays fully compatible with the budget iteration (cm_iterative_target_adj = 5/7/9): the anchor rescales until the budget is met, so politics redistributes WHERE abatement happens without relaxing the target.
+  p45_regiDiff_ratio(t,regi)$(t.val lt p45_regiDiff_startYr(regi)) = p45_regiDiff_phi(regi);
+  p45_regiDiff_ratio(t,regi)$(t.val ge p45_regiDiff_startYr(regi)) =
+    1 - (1 - p45_regiDiff_phi(regi))
+        * rPower(1 - p45_regiDiff_lambda(regi), t.val - p45_regiDiff_startYr(regi));
 elseif cm_taxCO2_regiDiff = 3, !! gdpSpread
   !! Compute ratio between GDP per capita (in 1e3 $ PPP 2017) and s45_regiDiff_gdpThreshold, and upper bound it by 1
   p45_regiDiff_ratio(t,regi) = min(p45_gdppcap_PPP(t,regi) / s45_regiDiff_gdpThreshold , 1);

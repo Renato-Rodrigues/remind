@@ -26,7 +26,7 @@ solvestat, modelstat, resusd, objval
 
 convMessage80   "contains all convergence criteria"
 /
-infes,surplus,nonopt,taxconv,anticip,globalbudget,peakbudgyr,peakbudget,regiBudget,regiTarget,NDC,implicitEnergyTarget,cm_implicitPriceTarget,cm_implicitPePriceTarget,damage,DevPriceAnticip, IterationNumber
+infes,surplus,nonopt,taxconv,anticip,globalbudget,peakbudgyr,peakbudget,regiBudget,regiTarget,NDC,implicitEnergyTarget,cm_implicitPriceTarget,cm_implicitPePriceTarget,damage,DevPriceAnticip, IterationNumber, pfm
 /
 
 activeConvMessage80(convMessage80)   "all active convergence criterias" / /

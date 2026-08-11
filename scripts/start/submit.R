@@ -115,6 +115,10 @@ submit <- function(cfg, restart = FALSE, stopOnFolderCreateError = TRUE) {
                   ".Rprofile" = ".Rprofile")
     .copy.fromlist(filelist,cfg$results_folder)
 
+    # PFM political-feasibility coupling: make the run folder self-contained.
+    source("scripts/start/preparePFM.R")
+    preparePFM(cfg)
+
     # Do not remove .RData files from REMIND main folder because they are needed in case you need to manually restart subsequent runs.
   }
 

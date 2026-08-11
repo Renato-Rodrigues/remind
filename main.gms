@@ -595,7 +595,7 @@ parameter
 parameter
   cm_taxCO2_regiDiff "switch for choosing the regional carbon price differentiation scheme in 45_carbonprice/functionalForm"
 ;
-  cm_taxCO2_regiDiff = 6; !! def = 6 !! regexp = 0|1|2|3|5|6|7|8|10
+  cm_taxCO2_regiDiff = 6; !! def = 6 !! regexp = 0|1|2|3|5|6|7|8|10|11
 *' Switch can either be set to a specific scenario (e.g. "ScenarioMIP2070") or to "manual". If specific scenario is chosen, settings can be adjusted via cm_taxCO2_regiDiff_convergence and cm_taxCO2_regiDiff_startyearValue. If set to manual, settings must be provided via cm_taxCO2_regiDiff_convergence and cm_taxCO2_regiDiff_startyearValue. 
 *' * (0): none             - No regional differentiation, i.e. globally uniform carbon pricing
 *' * (1): initialSpread10  - Maximal initial spread of carbon prices in 2030 between OECD regions and poorest region is equal to 10. Initial spread for each region determined based on GDP per capita (PPP) in 2030. By default, carbon prices converge using quadratic phase-in until 2050. Convergence scheme can be adjusted with cm_taxCO2_regiDiff_convergence.
@@ -606,6 +606,12 @@ parameter
 *' * (7): ScenarioMIP2070  - Carbon price differentiation with convergence year 2070 - used in ScenarioMIP - that takes carbon prices from path_gdx_ref or cm_taxCO2_regiDiff_startyearValue as starting point and assumes regionally differentiated speed of convergence to global anchor trajectory
 *' * (8): ScenarioMIP2100  - Carbon price differentiation with convergence year 2100 - used in ScenarioMIP - that takes carbon prices from path_gdx_ref or cm_taxCO2_regiDiff_startyearValue as starting point and assumes regionally differentiated speed of convergence to global anchor trajectory
 *' * (10): manual          - Enables manual specification of regional carbon price differentiation based on cm_taxCO2_regiDiff_convergence and cm_taxCO2_regiDiff_startyearValue
+*' * (11): feasibility     - Political-feasibility differentiation (PFM coupling). The regional carbon price is a PERSISTENT share phi(regi) of the global anchor, together with an optional closure rate lambda(regi).
+*'                             Unlike options (1)-(10) the ratio does NOT converge to 1 by construction: 
+*'                                with lambda = 0 the political gap between regions persists for the whole horizon, and
+*'                                with lambda > 0 it closes at the empirically estimated political adjustment speed. 
+*'                             Phi is derived from each region's ambition-gap tier below its stochastic feasibility frontier. 
+*'                             Combine with cm_iterative_target_adj = 9 so the global anchor still rescales to meet the carbon budget: the budget is preserved and politics only redistributes WHERE the effort is made.
 parameter
   cm_taxCO2_interpolation "switch for interpolation between (a) carbonprice trajectory given by path_gdx_ref and (b) carbonprice trajectory defined in 45_carbonprice"
 ;
@@ -1430,6 +1436,49 @@ $setglobal c_magpieIter  20,24,28,32     !! def = "20,24,28,32"  !! This regular
 *' c_edgeTransportIter  "Nash iterations in which EDGE-T runs"
 *'
 $setglobal c_edgeTransportIter 10,12,14,16,18,20,22,24,27,30,33,36,39,42,45,50,55,60,65,70,75,80,85,90,95   !! def = "10,12,14,16,18,20,22,24,27,30,33,36,39,42,45,50,55,60,65,70,75,80,85,90,95" 
+
+*' c_pfmIter  "Nash iterations in which the PFM political-feasibility layer runs"
+*'
+*' Only used with cm_taxCO2_regiDiff = 11. 
+*' In these iterations REMIND hands its current energy-system state to the PFM/PSM feasibility model, which recomputes each region's
+*' political feasibility share phi and writes it back through a gdx. 
+*' Between these iterations phi is held fixed, so the Nash solve sees a stationary carbon-price differentiation. 
+*' Start late enough that the energy system has stabilised, and leave gaps so the coupled system can settle.
+$setglobal c_pfmIter 20,24,28,32,36,40,45,50,55,60,65,70,75,80,85,90,95   !! def = "20,24,28,32,36,40,45,50,55,60,65,70,75,80,85,90,95" 
+
+*** cm_pfmConvTol  PFM coupling convergence tolerance: the loop stops calling PFM once
+***                the largest change in any region's feasibility share between two
+***                consecutive PFM calls falls below this. 0.01 = one percentage point
+***                of a region's carbon-price share. Set to 0 to force PFM to run at
+***                every iteration in c_pfmIter (useful for debugging the interface).
+parameter cm_pfmConvTol "PFM coupling convergence tolerance on phi" /0.01/;
+
+*** cm_pfmBindMode  What the PFM feasibility share phi binds (docs/psm-coupling-scenario-design.md).
+***   1 = RATIO  phi scales the global anchor. Politics redistributes WHERE abatement
+***              happens; the carbon budget is always met. Note the constraint weakens
+***              as ambition rises, because a rising anchor raises the constrained
+***              region's price too.
+***   2 = LEVEL  phi caps the ABSOLUTE price at phi * P_feasible, the price implied by
+***              the region's politically feasible stringency path. The budget may then
+***              be unreachable - which is the finding, not a bug. Requires the
+***              feasibility bound in p45_pfmPriceBound.
+parameter cm_pfmBindMode "1 = phi bounds the price RATIO, 2 = phi caps the absolute LEVEL" /1/;
+
+*** cm_pfmMaxPrice   Price-explosion threshold, US$/tCO2. Above this the coupled run is
+***                  flagged as infeasible rather than reported as a result. This run
+***                  family has already produced a diffuse price above $1000/tCO2, and
+***                  that failure is SILENT - the solve succeeds. Default 5000 is well
+***                  above any defensible carbon price and well below GAMS overflow.
+parameter cm_pfmMaxPrice "price-explosion threshold for the coupled run, US$/tCO2" /5000/;
+*** cm_pfmTheta   Coupling severity: the share of incremental cost-optimal effort
+***                withheld from the largest-gap region. 0 is the uncoupled null and
+***                MUST reproduce the reference run exactly - that is the interface
+***                correctness gate, not a result. Passed to R via
+***                pfm-coupling-runtime.yml, so it is set here ONLY.
+parameter cm_pfmTheta "PFM coupling severity (0 = uncoupled null)" /0/;
+*** cm_pfmInfesPatience  Consecutive flagged iterations before the run is declared
+***                  infeasible. 3 avoids calling it on one noisy Nash iteration.
+parameter cm_pfmInfesPatience "consecutive flagged iterations before declaring infeasible" /3/;
 
 *' cm_rcp_scen       "chooses RCP scenario"
 *'

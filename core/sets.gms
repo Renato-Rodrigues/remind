@@ -2316,6 +2316,11 @@ edgeTransportIter(iteration) "Nash iterations in which EDGE-T runs"
 /
     %c_edgeTransportIter%
 /
+
+pfmIter(iteration) "Nash iterations in which the PFM political-feasibility layer runs"
+/
+    %c_pfmIter%
+/
 ;
 
 ***-----------------------------------------------------------------------------

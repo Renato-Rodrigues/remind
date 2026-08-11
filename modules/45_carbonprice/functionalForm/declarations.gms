@@ -45,6 +45,35 @@ $ifThen.taxCO2regiDiffStartyearValue1 "%cm_taxCO2_regiDiff_startyearValue%" == "
 $else.taxCO2regiDiffStartyearValue1
 p45_regiDiff_startyearValue(all_regi)       "manually chosen regional carbon price in cm_startyear converted from $/t CO2eq to T$/GtC"
 p45_regiDiff_startyearValue_data(ext_regi)  "input data for regional carbon price in start year provided by switch cm_taxCO2_regiDiff_startyearValue"
+p45_regiDiff_phi(all_regi)                  "political feasibility share: regional carbon price as a persistent fraction of the global anchor (cm_taxCO2_regiDiff = 11)"
+p45_regiDiff_lambda(all_regi)               "political closure rate at which the feasibility share approaches 1 (0 = gap persists for the whole horizon)"
+p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi back from the PFM coupling gdx"
+
+*** PFM convergence. The coupling is a fixed point in phi; it has converged when a further PFM call stops changing phi. Once converged the R call is skipped for the rest of the run - phi is FROZEN, not reset, and keeps being applied.
+  p45_pfmDelta_aux(all_regi)   "max abs change in phi since the previous PFM call, as loaded from the gdx"
+  p45_pfmDelta                 "the same, as a scalar"
+  p45_pfmConverged             "1 once the phi delta has fallen below cm_pfmConvTol"
+  p45_pfmCallCount             "number of PFM calls made, for the log"
+  p45_pfmPriceBound(ttot,all_regi) "politically feasible absolute carbon price, US$/tCO2 (bind mode 2)"
+  p45_pfmPriceBound_aux(ttot,all_regi) "as loaded from the PFM gdx"
+  p45_pfmBinds(ttot,all_regi)  "1 where the political cap is the binding constraint"
+
+*** PFM Infeasibility detection
+  p45_pfmMaxPrice              "highest carbon price anywhere in the current solution, US$/tCO2"
+  p45_pfmRescaleHist(iteration) "budget-iteration rescale factor, kept to detect divergence"
+  p45_pfmInfesCode             "0 ok | 1 price explosion | 2 budget iteration diverging | 3 political cap below the reference price"
+  p45_pfmInfesCount            "consecutive iterations flagged, so one noisy iteration is not a verdict"
+
+*** PFM per-iteration tracking (for debugging and diagnostics)
+  p45_pfmPhi_iter(iteration,all_regi)        "phi per region, per coupling iteration"
+  p45_pfmDelta_iter(iteration)               "max abs change in phi vs the previous call"
+  p45_pfmMaxPrice_iter(iteration)            "highest carbon price anywhere, US$/tCO2"
+  p45_pfmInfes_iter(iteration)               "infeasibility code (0 ok)"
+  p45_pfmBindShare_iter(iteration)           "share of region-periods where the political cap binds"
+  p45_pfmPriceMean_iter(iteration,all_regi)  "mean applied carbon price per region - the PFM -> REMIND channel"
+  p45_pfmBoundMean_iter(iteration,all_regi)  "mean political price bound per region - the REMIND -> PFM channel"
+  p45_pfmAnchor_iter(iteration)              "global anchor - what the budget iteration is doing meanwhile"
+  p45_pfmConverged_iter(iteration)           "1 from the call at which phi converged"
 / %cm_taxCO2_regiDiff_startyearValue% /
 $endIf.taxCO2regiDiffStartyearValue1
 ;

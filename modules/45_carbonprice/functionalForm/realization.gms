@@ -45,6 +45,7 @@
 *####################### R SECTION START (PHASES) ##############################
 $Ifi "%phase%" == "declarations" $include "./modules/45_carbonprice/functionalForm/declarations.gms"
 $Ifi "%phase%" == "datainput" $include "./modules/45_carbonprice/functionalForm/datainput.gms"
+$Ifi "%phase%" == "presolve" $include "./modules/45_carbonprice/functionalForm/presolve.gms"
 $Ifi "%phase%" == "postsolve" $include "./modules/45_carbonprice/functionalForm/postsolve.gms"
 *######################## R SECTION END (PHASES) ###############################
 
