@@ -1749,4 +1749,12 @@ p_prodAllReference(t,regi,te) =
 *' initialize vm_changeProdStartyearCost for tax calculation
 vm_changeProdStartyearCost.l(t,regi,te) = 0;
 
+*' PFM political-feasibility coupling: initialise the two cross-module flags here,
+*' unconditionally. 45_carbonprice only assigns them when cm_taxCO2_regiDiff = 11, but
+*' 80_optimization READS them on every run to decide whether Nash may converge - so
+*' without a default they are "declared but never assigned" on every uncoupled run.
+*' 0 / 0 is also the correct uncoupled meaning: nothing to wait for, nothing wrong.
+pm_pfmConverged = 0;
+pm_pfmInfesCode = 0;
+
 *** EOF ./core/datainput.gms
