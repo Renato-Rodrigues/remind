@@ -1450,7 +1450,10 @@ $setglobal c_pfmIter 15,19,23,26,29,32,35,38,41,44,47,52,57,62,67,72,77,82,87,92
 ***                consecutive PFM calls falls below this. 0.01 = one percentage point
 ***                of a region's carbon-price share. Set to 0 to force PFM to run at
 ***                every iteration in c_pfmIter (useful for debugging the interface).
-parameter cm_pfmConvTol "PFM coupling convergence tolerance on phi" /0.01/;
+parameter
+  cm_pfmConvTol   "PFM coupling convergence tolerance on phi"
+;
+  cm_pfmConvTol = 0.01;      !! def = 0.01  !! regexp = [0-9]*\.?[0-9]+
 
 *** cm_pfmBindMode  What the PFM feasibility share phi binds (docs/psm-coupling-scenario-design.md).
 ***   1 = RATIO  phi scales the global anchor. Politics redistributes WHERE abatement
@@ -1461,23 +1464,35 @@ parameter cm_pfmConvTol "PFM coupling convergence tolerance on phi" /0.01/;
 ***              the region's politically feasible stringency path. The budget may then
 ***              be unreachable - which is the finding, not a bug. Requires the
 ***              feasibility bound in p45_pfmPriceBound.
-parameter cm_pfmBindMode "1 = phi bounds the price RATIO, 2 = phi caps the absolute LEVEL" /1/;
+parameter
+  cm_pfmBindMode   "1 = phi bounds the price RATIO, 2 = phi caps the absolute LEVEL, 3 = mild progression"
+;
+  cm_pfmBindMode = 1;      !! def = 1  !! regexp = 1|2|3
 
 *** cm_pfmMaxPrice   Price-explosion threshold, US$/tCO2. Above this the coupled run is
 ***                  flagged as infeasible rather than reported as a result. This run
 ***                  family has already produced a diffuse price above $1000/tCO2, and
 ***                  that failure is SILENT - the solve succeeds. Default 5000 is well
 ***                  above any defensible carbon price and well below GAMS overflow.
-parameter cm_pfmMaxPrice "price-explosion threshold for the coupled run, US$/tCO2" /5000/;
+parameter
+  cm_pfmMaxPrice   "price-explosion threshold for the coupled run, US$/tCO2"
+;
+  cm_pfmMaxPrice = 5000;      !! def = 5000  !! regexp = [0-9]+
 *** cm_pfmTheta   Coupling severity: the share of incremental cost-optimal effort
 ***                withheld from the largest-gap region. 0 is the uncoupled null and
 ***                MUST reproduce the reference run exactly - that is the interface
 ***                correctness gate, not a result. Passed to R via
 ***                pfm-coupling-runtime.yml, so it is set here ONLY.
-parameter cm_pfmTheta "PFM coupling severity (0 = uncoupled null)" /0/;
+parameter
+  cm_pfmTheta   "PFM coupling severity (0 = uncoupled null)"
+;
+  cm_pfmTheta = 0;      !! def = 0  !! regexp = [0-9]*\.?[0-9]+
 *** cm_pfmInfesPatience  Consecutive flagged iterations before the run is declared
 ***                  infeasible. 3 avoids calling it on one noisy Nash iteration.
-parameter cm_pfmInfesPatience "consecutive flagged iterations before declaring infeasible" /3/;
+parameter
+  cm_pfmInfesPatience   "consecutive flagged iterations before declaring infeasible"
+;
+  cm_pfmInfesPatience = 3;      !! def = 3  !! regexp = [0-9]+
 
 *' cm_rcp_scen       "chooses RCP scenario"
 *'
