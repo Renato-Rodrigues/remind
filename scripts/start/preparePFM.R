@@ -153,11 +153,17 @@ preparePFM <- function(cfg, verbose = TRUE) {
     # aggregation weights. Kept NEAR-TERM on purpose - see default.cfg.
     paste0("weightYear: ", gv("weightYear", "PFM_WEIGHT_YEAR", 2025))
   )
+  # Declared, NOT tested for existence. REMIND copies input_ref.gdx into the run folder
+  # AFTER this script runs, so a file.exists() check here is always false and the entry
+  # was never written - which made bind modes 2 and 3 refuse at iteration 15 even though
+  # the file was sitting right there by then. iterativePFM() validates it at run time,
+  # where the answer is actually knowable, so a declared-but-absent path is safe.
+  cfgLines <- c(cfgLines, "refGdx: input_ref.gdx")
   if (file.exists(refRun)) {
-    cfgLines <- c(cfgLines, "refGdx: input_ref.gdx")
-    say("reference price path: input_ref.gdx (from path_gdx_ref)")
+    say("reference price path: input_ref.gdx (already present)")
   } else {
-    say("NOTE: no input_ref.gdx - bind mode 2 will refuse to run without it")
+    say("reference price path: input_ref.gdx (REMIND copies it in later; ",
+        "iterativePFM checks at run time)")
   }
   say("derived from the run: ssp = ", ssp, ", regionmapping = ", rmap)
   writeLines(cfgLines, file.path(cfg$results_folder, "pfm-coupling.yml"))
