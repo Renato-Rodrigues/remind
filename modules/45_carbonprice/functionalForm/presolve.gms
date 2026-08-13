@@ -74,14 +74,18 @@ if(cm_taxCO2_regiDiff = 11,
 *** than capping the price at zero.
     if(cm_pfmBindMode = 2,
       Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmPriceBound_aux = p45_pfmPriceBound;
-      p45_pfmPriceBound(ttot,regi)$(p45_pfmPriceBound_aux(ttot,regi) > 0) = p45_pfmPriceBound_aux(ttot,regi);
+*** The R side exports US$/tCO2; the anchor and pm_taxCO2eq are T$/GtC. Converting here once, so every later use is in model units.
+      p45_pfmPriceBound(ttot,regi)$(p45_pfmPriceBound_aux(ttot,regi) > 0) =
+        p45_pfmPriceBound_aux(ttot,regi) * sm_DptCO2_2_TDpGtC;
     );
 
 *** Mode 3 carries its own price path rather than a share. Same "> 0" guard: a failed
 *** R call leaves the previous path in place instead of zeroing the carbon price.
     if(cm_pfmBindMode = 3,
       Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmMPPrice_aux = p45_pfmMPPrice;
-      p45_pfmMPPrice(ttot,regi)$(p45_pfmMPPrice_aux(ttot,regi) > 0) = p45_pfmMPPrice_aux(ttot,regi);
+*** Converted from US$/tCO2 to T$/GtC.
+      p45_pfmMPPrice(ttot,regi)$(p45_pfmMPPrice_aux(ttot,regi) > 0) =
+        p45_pfmMPPrice_aux(ttot,regi) * sm_DptCO2_2_TDpGtC;
     );
 
 *** Convergence test. p45_pfmDelta is the largest change in ANY region's phi since
