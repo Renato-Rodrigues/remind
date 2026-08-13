@@ -58,6 +58,8 @@ p45_regiDiff_lambda(all_regi)               "political closure rate at which the
 p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi back from the PFM coupling gdx"
 *** PFM convergence. The coupling is a fixed point in phi; it has converged when a further PFM call stops changing phi. Once converged the R call is skipped for the rest of the run - phi is FROZEN, not reset, and keeps being applied.
   p45_pfmDelta_aux(all_regi)   "max abs change in phi since the previous PFM call, as loaded from the gdx"
+  p45_pfmIterSeen_aux(all_regi) "the Nash iteration the R side echoed back; proves the gdx is this call's, not a leftover"
+  p45_pfmIterSeen              "the same, as a scalar"
   p45_pfmDelta                 "the same, as a scalar"
   p45_pfmCallCount             "number of PFM calls made, for the log"
   p45_pfmPriceBound(ttot,all_regi) "politically feasible absolute carbon price, US$/tCO2 (bind mode 2)"

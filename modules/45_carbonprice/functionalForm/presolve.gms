@@ -49,6 +49,13 @@ if(cm_taxCO2_regiDiff = 11,
     put "theta: ", cm_pfmTheta:0:6 /;
     put "convTol: ", cm_pfmConvTol:0:6 /;
     put "iteration: ", iteration.val:0:0 /;
+*** REMIND's solution before cm_startyear is FIXED to the reference run, so anything the
+*** R side evaluates in that window cannot respond to the coupling. phi used to be pinned
+*** at the first projection year (2025) while cm_startyear was 2030 - so phi was computed
+*** entirely inside the frozen window and came back bit-identical on every call, delta
+*** exactly 0, for the whole run. Handing the start year over lets the R side place its
+*** tier year where the pathway can actually move.
+    put "startYear: ", cm_startyear:0:0 /;
     putclose pfmcfg;
 
     Execute "Rscript -e 'library(pfm); pfm::iterativePFM()'";
@@ -83,9 +90,24 @@ if(cm_taxCO2_regiDiff = 11,
 *** "> 0" means a failure cannot be mistaken for convergence.
     Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmDelta_aux = p45_pfmDelta;
     p45_pfmDelta = sum(regi, p45_pfmDelta_aux(regi)) / max(1, card(regi));
-    if((p45_pfmDelta > 0) and (p45_pfmDelta <= cm_pfmConvTol),
-      pm_pfmConverged = 1;
-      display "PFM coupling CONVERGED - phi frozen for the remainder of the run";
+*** Freshness, not positivity. The old test required p45_pfmDelta > 0, meaning a
+*** PERFECTLY converged loop - delta exactly 0 - was read as "not converged" and the
+*** run kept calling R forever: the 2026-08-13 batch made 14 identical calls at ~2.6
+*** minutes each and never stopped. The > 0 guard was there to stop a FAILED call
+*** (which writes no gdx, so the previous values survive the load) from being mistaken
+*** for convergence. That job now belongs to the iteration stamp the R side echoes
+*** back: if it does not match the iteration we asked for, the gdx is a leftover and
+*** nothing about it may be believed.
+    Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmIterSeen_aux = p45_pfmIterSeen;
+    p45_pfmIterSeen = sum(regi, p45_pfmIterSeen_aux(regi)) / max(1, card(regi));
+    if(abs(p45_pfmIterSeen - iteration.val) > 0.5,
+      display "PFM coupling: the gdx is STALE - the R side did not answer this iteration. Keeping the previous phi.";
+      display p45_pfmIterSeen, p45_pfmCallCount;
+    else
+      if((p45_pfmCallCount >= 2) and (p45_pfmDelta <= cm_pfmConvTol),
+        pm_pfmConverged = 1;
+        display "PFM coupling CONVERGED - phi frozen for the remainder of the run";
+      );
     );
     display p45_regiDiff_phi, p45_pfmDelta, pm_pfmConverged, p45_pfmCallCount;
   );
