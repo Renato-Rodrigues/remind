@@ -104,7 +104,8 @@ preparePFM <- function(cfg, verbose = TRUE) {
   missing <- need[!file.exists(file.path(src, need))]
   if (length(missing)) {
     stop("preparePFM: the Run-Group is missing ", paste(missing, collapse = ", "),
-         ". The band assignments come from the pfm psm-donor step (pfmRun(group=..., stage="downstream")); without ",
+         ". The band assignments come from the pfm psm-donor step ",
+         "(pfmRun(group = <group>, stage = 'downstream')); without ",
          "them the coupling refuses to run rather than reverting to phi = 1.")
   }
   # Only now, once every source file is confirmed present. Creating the folder earlier
