@@ -27,6 +27,33 @@
 
 if(cm_taxCO2_regiDiff = 11,
 
+*** --- did the phi ratio survive the last postsolve? ---------------------------
+*** FIRST thing in the file, deliberately: this reads p45_regiDiff_ratio exactly as the
+*** previous iteration's postsolve left it, and exactly as core/presolve.gms has just
+*** consumed it (core/loop.gms:54 runs before the module presolves, and turns
+*** pm_taxCO2eq into pm_taxCO2eqSum - the parameter the equations see). Anywhere later
+*** in this file the ratio has already been rebuilt from phi, which repairs the damage
+*** and hides it. It must also come BEFORE the coupling call below, or the first call -
+*** which makes phi non-uniform while the ratio is still legitimately uniform - would
+*** trip it.
+***
+*** What it catches: postsolve.gms Step III.3 recomputes p45_regiDiff_ratio for every
+*** cm_taxCO2_regiDiff except 0 and 3. Its cm_taxCO2_regiDiff = 11 branch was missing,
+*** so mode 11 fell through to the else-branch and - because p45_regiDiff_endYr is 0 for
+*** mode 11 - the "ratio = 1 from endYr" line set the ratio to 1 in EVERY year. phi was
+*** computed, applied, and erased again before the solve ever saw it, while every
+*** diagnostic in the gdx still reported a non-trivial phi. SSP2-PkBudg1000-PFMratio and
+*** -PFMlevelC of the 2026-08-14/15 batch were lost to it and nothing flagged them.
+  if((p45_pfmCallCount > 0) and (cm_pfmBindMode = 1) and
+     (smax(regi, p45_regiDiff_phi(regi)) - smin(regi, p45_regiDiff_phi(regi)) > 1e-6),
+    p45_pfmRatioSpread = smax((t,regi)$(t.val ge cm_startyear), p45_regiDiff_ratio(t,regi))
+                       - smin((t,regi)$(t.val ge cm_startyear), p45_regiDiff_ratio(t,regi));
+    if(p45_pfmRatioSpread < 1e-6,
+      display p45_regiDiff_phi, p45_regiDiff_ratio, p45_pfmRatioSpread;
+      abort "45_carbonprice: p45_regiDiff_ratio is uniform although phi is not - the PFM differentiation was erased between presolve and the solve. See postsolve.gms Step III.3.";
+    );
+  );
+
 *** --- the coupling call, skipped once phi has converged -----------------------
 *** The loop is a fixed point: REMIND's energy system moves the ambition gaps, which
 *** move phi, which moves the price, which moves the energy system. It has converged
@@ -129,6 +156,16 @@ if(cm_taxCO2_regiDiff = 11,
   p45_taxCO2eq_regiDiff(t,regi) = p45_regiDiff_ratio(t,regi) * p45_taxCO2eq_anchor(t);
 
 *** --- what phi actually binds (cm_pfmBindMode) --------------------------------
+*** >>> Modes 2 and 3 below are MIRRORED in postsolve.gms Step IV.4. Change one, change
+*** >>> the other. They cannot live here alone: core/loop.gms:54-55 runs core/presolve.gms
+*** >>> - where pm_taxCO2eq becomes pm_taxCO2eqSum, the parameter the equations actually
+*** >>> see - BEFORE the module presolves, so the solve consumes whatever pm_taxCO2eq was
+*** >>> left holding at the END of the previous iteration, i.e. after postsolve. In a
+*** >>> budget-iterating run postsolve Part IV rebuilds pm_taxCO2eq from the rescaled
+*** >>> anchor and would otherwise throw the political layer away. Mode 1 needs no mirror:
+*** >>> it IS ratio * anchor, so Step III.3 + Part IV reproduce it (and keep the
+*** >>> path_gdx_ref interpolation, as every other cm_taxCO2_regiDiff mode does).
+
 *** Mode 1 (RATIO): phi scales the anchor. The budget iteration can always meet the
 *** budget by raising the anchor - and doing so raises the constrained region's price
 *** too, so the political constraint weakens as ambition rises. Redistributive only.

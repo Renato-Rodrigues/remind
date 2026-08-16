@@ -62,6 +62,7 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
   p45_pfmIterSeen              "the same, as a scalar"
   p45_pfmDelta                 "the same, as a scalar"
   p45_pfmCallCount             "number of PFM calls made, for the log"
+  p45_pfmRatioSpread           "max-min of p45_regiDiff_ratio as presolve finds it, i.e. as the last postsolve left it - zero while phi is not uniform means the PFM differentiation was erased"
   p45_pfmPriceBound(ttot,all_regi) "politically feasible absolute carbon price, T$/GtC (converted from the R side's US$/tCO2 on load in presolve.gms)"
   p45_pfmPriceBound_aux(ttot,all_regi) "as loaded from the PFM gdx, still in US$/tCO2"
   p45_pfmBinds(ttot,all_regi)  "1 where the political cap is the binding constraint"

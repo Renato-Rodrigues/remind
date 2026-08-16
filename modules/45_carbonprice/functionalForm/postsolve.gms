@@ -371,7 +371,21 @@ display  p45_regiDiff_initialRatio;
 
 if( (cm_taxCO2_regiDiff = 0) or (cm_taxCO2_regiDiff = 3), !! none or gdpSpread
   !! Nothing to re-compute
-else 
+elseif cm_taxCO2_regiDiff = 11, !! feasibility (PFM coupling)
+  !! Rebuild the ratio from phi, exactly as datainput.gms Step III.3 and presolve.gms do.
+  !! This branch MUST exist. Without it mode 11 fell through to the else-branch below,
+  !! and since p45_regiDiff_endYr is 0 for mode 11 (datainput.gms Step III.2) the
+  !! "ratio = 1 from endYr" line set the ratio to 1 in EVERY year - erasing phi after
+  !! every solve. Because core/loop.gms runs core/presolve.gms (which builds
+  !! pm_taxCO2eqSum, what the equations see) BEFORE the module presolves, the model
+  !! then solved on the uniform anchor: SSP2-PkBudg1000-PFMratio and -PFMlevelC came
+  !! out bit-identical to the theta = 0 gate while reporting phi in [0.21, 0.79].
+  !! The sibling Step III.1 above already carries the same branch.
+  p45_regiDiff_ratio(t,regi)$(t.val lt p45_regiDiff_startYr(regi)) = p45_regiDiff_phi(regi);
+  p45_regiDiff_ratio(t,regi)$(t.val ge p45_regiDiff_startYr(regi)) =
+    1 - (1 - p45_regiDiff_phi(regi))
+        * rPower(1 - p45_regiDiff_lambda(regi), t.val - p45_regiDiff_startYr(regi));
+else
   !! Set convergence factor equal to p45_regiDiff_initialRatio before p45_regiDiff_startYr:
   p45_regiDiff_ratio(t,regi)$(t.val lt p45_regiDiff_startYr(regi)) = p45_regiDiff_initialRatio(regi);
   !! Set  convergence factor equal to 1 from p45_regiDiff_endYr:
@@ -420,6 +434,48 @@ if(cm_taxCO2_lowerBound_path_gdx_ref = 1,
   display pm_taxCO2eq;
 );
 
+*** Step IV.4: Re-apply the PFM bind mode for modes 2 and 3 (cm_taxCO2_regiDiff = 11).
+***
+*** >>> MIRRORS the mode 2 and mode 3 branches of presolve.gms. Change one, change the other.
+***
+*** Why this has to be here and not only in presolve: core/loop.gms:54-55 runs
+*** core/presolve.gms - where pm_taxCO2eq becomes pm_taxCO2eqSum, the parameter the
+*** equations actually see - BEFORE the module presolves. So the solve consumes whatever
+*** pm_taxCO2eq was left holding at the END of the previous iteration, which is here.
+*** Parts III-IV above have just rebuilt it from the rescaled anchor, and for modes 2 and 3
+*** that throws the political layer away: mode 2's cap is min(anchor, phi * P_feasible) and
+*** mode 3 carries its own generated path, neither of which is expressible as ratio * anchor,
+*** so the Step III.3 fix cannot restore them the way it restores mode 1.
+***
+*** Mode 1 is deliberately absent: it IS ratio * anchor, so Step III.3 and Part IV above
+*** already reproduce it - and leaving it to them keeps the p45_taxCO2eq_path_gdx_ref
+*** interpolation that every other cm_taxCO2_regiDiff mode gets.
+if(cm_taxCO2_regiDiff = 11,
+
+  if(cm_pfmBindMode = 2,
+    if(smax((t,regi)$(t.val ge cm_startyear), p45_pfmPriceBound(t,regi)) > 0,
+      pm_taxCO2eq(t,regi)$(t.val ge cm_startyear) =
+        min(p45_taxCO2eq_anchor(t), p45_pfmPriceBound(t,regi));
+      p45_pfmBinds(t,regi)$(t.val ge cm_startyear) =
+        1$(p45_pfmPriceBound(t,regi) < p45_taxCO2eq_anchor(t));
+    else
+      pm_taxCO2eq(t,regi)$(t.val ge cm_startyear) = p45_taxCO2eq_regiDiff(t,regi);
+      p45_pfmBinds(t,regi)$(t.val ge cm_startyear) = 0;
+      display "45_carbonprice: bind mode 2 with no price bound yet - running on the anchor until the first PFM call";
+    );
+  );
+
+  if(cm_pfmBindMode = 3,
+    if(smax((t,regi)$(t.val ge cm_startyear), p45_pfmMPPrice(t,regi)) <= 0,
+      pm_pfmInfesCode = 3;
+    else
+      pm_taxCO2eq(t,regi)$(t.val ge cm_startyear) = p45_pfmMPPrice(t,regi);
+    );
+  );
+
+  display "45_carbonprice: PFM bind mode re-applied after the budget iteration";
+  display pm_taxCO2eq;
+);
 
 ); !! if((cm_emiscen eq 9) AND ((cm_iterative_target_adj eq 5) OR (cm_iterative_target_adj eq 7) OR (cm_iterative_target_adj eq 9)),
 *** EOF ./modules/45_carbonprice/functionalForm/postsolve.gms
