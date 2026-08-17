@@ -179,13 +179,18 @@ $endIf.pfmRegipol
 *** Step III.0: Political-feasibility shares (cm_taxCO2_regiDiff = 11). Defaults give an uncoupled run (phi = 1, lambda = 0), so a missing or partial input file can only ever weaken the constraint, never silently strengthen it.
 p45_regiDiff_phi(regi) = 1;
 p45_regiDiff_lambda(regi) = 0;
-*** The Bulk companions default to the economy-wide share, so an absent or failed
-*** export yields a ZERO markup - i.e. the pre-ADR-0042 min() behaviour - rather than
-*** an invented differentiation.
-p45_pfmPhiETS(regi) = 1;
-p45_pfmPriceBoundETS(ttot,regi) = 0;
-p45_pfmMPPriceETS(ttot,regi) = 0;
-p45_pfmPriceETS(ttot,regi) = 0;
+*** The per-market companions default to the economy-wide share, so an absent or failed
+*** export yields a ZERO markup in every market - i.e. the pre-ADR-0042 min() behaviour -
+*** rather than an invented differentiation.
+p45_pfmPhiMkt(regi,emiMkt) = 1;
+p45_pfmPriceBoundMkt(ttot,regi,emiMkt) = 0;
+p45_pfmMPPriceMkt(ttot,regi,emiMkt) = 0;
+p45_pfmPriceMkt(ttot,regi,emiMkt) = 0;
+*** Each market's closure rate defaults to the economy-wide one, set just below from the
+*** include. An absent export therefore reproduces the pre-fix mode-1 behaviour exactly
+*** rather than introducing a rate nobody asked for; the R side overwrites it in
+*** presolve.gms when it supplies one.
+p45_pfmLambdaMkt(regi,emiMkt) = 0;
 *** The include supplies the INITIAL shares only. Iteration 1 has no REMIND solution to hand the feasibility model, so phi must start from a file; 
 *** from the iterations listed in c_pfmIter onward it is replaced each time through presolve.gms via the gdx interface. A missing file means the run starts uncoupled (phi = 1) until the first coupling iteration.
 if(cm_taxCO2_regiDiff = 11,
@@ -194,6 +199,10 @@ $include "./modules/45_carbonprice/functionalForm/input/p45_regiDiff_feasibility
 $else
   display "45_carbonprice: no p45_regiDiff_feasibility.inc found - starting from phi = 1 (uncoupled) until the first c_pfmIter iteration";
 $endif
+*** After the include, not before: the file sets p45_regiDiff_lambda, and each market's
+*** rate falls back to whatever it ended up as. Overwritten from the gdx in presolve.gms
+*** once the R side supplies the per-sector speeds.
+  p45_pfmLambdaMkt(regi,emiMkt) = p45_regiDiff_lambda(regi);
   display p45_regiDiff_phi, p45_regiDiff_lambda;
 );
 

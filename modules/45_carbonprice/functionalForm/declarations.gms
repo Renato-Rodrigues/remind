@@ -60,6 +60,7 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
   p45_pfmDelta_aux(all_regi)   "max abs change in phi since the previous PFM call, as loaded from the gdx"
   p45_pfmIterSeen_aux(all_regi) "the Nash iteration the R side echoed back; proves the gdx is this call's, not a leftover"
   p45_pfmIterSeen              "the same, as a scalar"
+  p45_pfmFresh                 "1 when the loaded gdx is this iteration's, 0 when it is a leftover; the load guard every PFM symbol is gated on"
   p45_pfmDelta                 "the same, as a scalar"
   p45_pfmCallCount             "number of PFM calls made, for the log"
   p45_pfmRatioSpread           "max-min of p45_regiDiff_ratio as presolve finds it, i.e. as the last postsolve left it - zero while phi is not uniform means the PFM differentiation was erased"
@@ -68,20 +69,44 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
   p45_pfmBinds(ttot,all_regi)  "1 where the political cap is the binding constraint"
   p45_pfmMPPrice(ttot,all_regi)     "mild-progression carbon price, T$/GtC (converted from the R side's US$/tCO2 on load in presolve.gms)"
   p45_pfmMPPrice_aux(ttot,all_regi) "as loaded from the PFM gdx, still in US$/tCO2"
-*** Sector-differentiated delivery (ADR 0042). The economy-wide symbols above carry the
-*** WORSE sector - the floor every market pays. These carry the BULK sector alone, and
-*** the difference becomes the ETS markup in pm_taxemiMkt. ETS ~ Bulk (electricity +
-*** industry), ES + other ~ Diffuse (buildings + transport). Inert unless
-*** cm_pfmSectorMarkup = 1, so a run with the switch off is bit-identical to before.
-  p45_pfmPhiETS(all_regi)           "Bulk feasibility share, for the ETS markup"
-  p45_pfmPhiETS_aux(all_regi)       "as loaded from the PFM gdx"
-  p45_pfmPriceBoundETS(ttot,all_regi)     "Bulk politically feasible price, T$/GtC"
-  p45_pfmPriceBoundETS_aux(ttot,all_regi) "as loaded from the PFM gdx, still in US$/tCO2"
-  p45_pfmMPPriceETS(ttot,all_regi)        "Bulk mild-progression carbon price, T$/GtC"
-  p45_pfmMPPriceETS_aux(ttot,all_regi)    "as loaded from the PFM gdx, still in US$/tCO2"
-  p45_pfmPriceETS(ttot,all_regi)          "the price the Bulk sector could bear, before the markup is taken against the floor, T$/GtC"
-  p45_pfmMarkupShare_iter(iteration)      "share of region-periods where the ETS markup is positive"
-  p45_pfmMarkupMean_iter(iteration)       "mean ETS markup over region-periods, T$/GtC"
+*** Sector-differentiated delivery (ADR 0042, symmetric since 2026-08-17). The
+*** economy-wide symbols above carry the WORSE sector - the floor EVERY market pays.
+*** These carry each market's OWN sector, and the difference becomes that market's
+*** markup in pm_taxemiMkt. Mapping, applied on the R side: Bulk -> ETS,
+*** Diffuse -> ES and other.
+***
+*** Indexed over all_emiMkt rather than split into per-market parameters. ADR 0042
+*** originally rejected the market dimension because defect 4 was a rank/order failure
+*** and a new rank is that trap one dimension up "for no gain" - but the symmetric
+*** markup needs BOTH sectors delivered, which is 8 flat parameters against 4 indexed
+*** ones, so the gain is now real. The trap is answered by the rank/domain assertions
+*** in .psmVerifyCouplingGdx() and by test-gdxRoundTrip.R, not by avoiding the rank.
+***
+*** The invariant: floor + markup(m) reproduces market m's own sector price exactly, so
+*** neither sector is capped by the other. min() is plumbing that keeps the markup
+*** non-negative, NOT a step that discards a sector. (It is NOT true that exactly one
+*** markup is positive - the floor mixes the worse share with the slower speed, so it can
+*** sit below both sector prices. See presolve.gms and test-exportFeasibilityBound.R.)
+***
+*** Inert unless cm_pfmSectorMarkup = 1, so a run with the switch off is bit-identical
+*** to the pre-ADR-0042 behaviour.
+  p45_pfmPhiMkt(all_regi,all_emiMkt)           "per-market feasibility share (its own sector's, not the floor's)"
+  p45_pfmPhiMkt_aux(all_regi,all_emiMkt)       "as loaded from the PFM gdx"
+*** Each market's OWN closure rate. Modes 2 and 3 carry it implicitly - both receive a
+*** finished PRICE PATH from R, built per sector. Mode 1 rebuilds its path here in GAMS
+*** from phi and a rate, so it needs the rate as a symbol or it silently reuses
+*** p45_regiDiff_lambda, which under sectorRule = "min" is the SLOWER sector's speed -
+*** understating exactly the headroom the markup expresses. Bulk 0.1023/yr vs Diffuse
+*** 0.0770/yr (MODEL.md 4.3).
+  p45_pfmLambdaMkt(all_regi,all_emiMkt)        "per-market political closure rate, for the mode-1 path"
+  p45_pfmLambdaMkt_aux(all_regi,all_emiMkt)    "as loaded from the PFM gdx"
+  p45_pfmPriceBoundMkt(ttot,all_regi,all_emiMkt)     "per-market politically feasible price, T$/GtC"
+  p45_pfmPriceBoundMkt_aux(ttot,all_regi,all_emiMkt) "as loaded from the PFM gdx, still in US$/tCO2"
+  p45_pfmMPPriceMkt(ttot,all_regi,all_emiMkt)        "per-market mild-progression carbon price, T$/GtC"
+  p45_pfmMPPriceMkt_aux(ttot,all_regi,all_emiMkt)    "as loaded from the PFM gdx, still in US$/tCO2"
+  p45_pfmPriceMkt(ttot,all_regi,all_emiMkt)          "the price each market's sector could bear, before the markup is taken against the floor, T$/GtC"
+  p45_pfmMarkupShare_iter(iteration)      "share of region-period-markets where the markup is positive"
+  p45_pfmMarkupMean_iter(iteration)       "mean markup over region-period-markets, T$/GtC"
 *** PFM Infeasibility detection
   p45_pfmMaxPrice              "highest carbon price anywhere in the current solution, US$/tCO2"
   p45_pfmRescaleHist(iteration) "budget-iteration rescale factor, kept to detect divergence"
