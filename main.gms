@@ -1493,6 +1493,31 @@ parameter
   cm_pfmInfesPatience   "consecutive flagged iterations before declaring infeasible"
 ;
   cm_pfmInfesPatience = 3;      !! def = 3  !! regexp = [0-9]+
+*** cm_pfmSectorMarkup  Deliver the PFM's two sectors as an economy-wide floor plus an
+***                 ETS markup (ADR 0042), instead of collapsing them with min().
+***                 The PFM is estimated separately for Bulk (electricity + industry,
+***                 organised actors) and Diffuse (buildings + transport, household
+***                 facing). REMIND sets one price per region, so the two had to be
+***                 collapsed - and Diffuse binds in 45 of 48 countries, so min()
+***                 discarded the Bulk estimate almost everywhere AND, being the
+***                 minimum of two noisy estimates, was biased low in the direction
+***                 that INFLATES the headline.
+***                 With this on:
+***                   pm_taxCO2eq        = the worse sector      (economy-wide floor)
+***                   pm_taxemiMkt(ETS)  = max(Bulk - floor, 0)  (what ETS bears on top)
+***                 pm_taxemiMkt is a MARKUP on top of pm_taxCO2eqSum, not a
+***                 replacement (21_tax/on/equations.gms q21_taxemiMkt), so every
+***                 consumer of pm_taxCO2eqSum - MAC curves, the biofuel emission
+***                 factor, trade tariffs - keeps working unchanged.
+***                 Default ON: min() discards the Bulk estimate in 45 of 48 countries
+***                 and, being the minimum of two correlated noisy estimates, is biased
+***                 low in the direction that INFLATES the headline. Set to 0 to
+***                 reproduce the pre-ADR-0042 min() behaviour bit-for-bit, which is
+***                 the sensitivity to report against, not the default to run.
+parameter
+  cm_pfmSectorMarkup   "1 = deliver Bulk/Diffuse as floor + ETS markup, 0 = collapse with min"
+;
+  cm_pfmSectorMarkup = 1;      !! def = 1  !! regexp = 0|1
 
 *' cm_rcp_scen       "chooses RCP scenario"
 *'

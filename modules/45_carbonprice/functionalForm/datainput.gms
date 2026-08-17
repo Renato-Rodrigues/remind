@@ -159,9 +159,33 @@ p45_pfmDelta = 0;
 p45_pfmMaxPrice = 0;
 p45_factorRescale_taxCO2_Funneled(iteration) = 1;
 
+*** Step III.-1: Two controllers must never own pm_taxemiMkt at once (ADR 0042).
+*** 47_regipol/regiCarbonPrice ITERATES pm_taxemiMkt against emission-market targets
+*** with its own rescale factor, and module 47's postsolve runs AFTER module 45's. If
+*** the PFM markup and an emission-market target are both active they fight over one
+*** instrument every iteration, and neither converges - the same class of failure as
+*** the defect where phi was written and then erased before the solve.
+*** Guarded on cm_emiMktTarget, NOT on the realization: regiCarbonPrice carries plenty
+*** of machinery that never touches the carbon price, and blocking those would be a
+*** needless restriction.
+$ifThen.pfmRegipol "%regipol%" == "regiCarbonPrice"
+$ifThen.pfmEmiMktTarget not "%cm_emiMktTarget%" == "off"
+if((cm_taxCO2_regiDiff = 11) and (cm_pfmSectorMarkup = 1),
+  abort "45_carbonprice: cm_pfmSectorMarkup = 1 writes pm_taxemiMkt, but cm_emiMktTarget is set and 47_regipol iterates the same parameter - two controllers, one instrument. Set cm_pfmSectorMarkup = 0, or clear cm_emiMktTarget.";
+);
+$endIf.pfmEmiMktTarget
+$endIf.pfmRegipol
+
 *** Step III.0: Political-feasibility shares (cm_taxCO2_regiDiff = 11). Defaults give an uncoupled run (phi = 1, lambda = 0), so a missing or partial input file can only ever weaken the constraint, never silently strengthen it.
 p45_regiDiff_phi(regi) = 1;
 p45_regiDiff_lambda(regi) = 0;
+*** The Bulk companions default to the economy-wide share, so an absent or failed
+*** export yields a ZERO markup - i.e. the pre-ADR-0042 min() behaviour - rather than
+*** an invented differentiation.
+p45_pfmPhiETS(regi) = 1;
+p45_pfmPriceBoundETS(ttot,regi) = 0;
+p45_pfmMPPriceETS(ttot,regi) = 0;
+p45_pfmPriceETS(ttot,regi) = 0;
 *** The include supplies the INITIAL shares only. Iteration 1 has no REMIND solution to hand the feasibility model, so phi must start from a file; 
 *** from the iterations listed in c_pfmIter onward it is replaced each time through presolve.gms via the gdx interface. A missing file means the run starts uncoupled (phi = 1) until the first coupling iteration.
 if(cm_taxCO2_regiDiff = 11,

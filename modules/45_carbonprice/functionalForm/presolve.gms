@@ -115,6 +115,27 @@ if(cm_taxCO2_regiDiff = 11,
         p45_pfmMPPrice_aux(ttot,regi) * sm_DptCO2_2_TDpGtC;
     );
 
+*** The BULK companions (ADR 0042). Loaded only when the markup is on, so a run with
+*** cm_pfmSectorMarkup = 0 never touches them and stays bit-identical to the pre-ADR
+*** behaviour. Same "> 0" freshness guard as everything else here: a failed R call
+*** leaves the previous values, and the markup is clamped at zero below in any case,
+*** so a stale companion can only ever shrink the differentiation, never invent it.
+    if(cm_pfmSectorMarkup = 1,
+      Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmPhiETS_aux = p45_pfmPhiETS;
+      p45_pfmPhiETS(regi)$(p45_pfmPhiETS_aux(regi) > 0) = p45_pfmPhiETS_aux(regi);
+      if(cm_pfmBindMode = 2,
+        Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmPriceBoundETS_aux = p45_pfmPriceBoundETS;
+        p45_pfmPriceBoundETS(ttot,regi)$(p45_pfmPriceBoundETS_aux(ttot,regi) > 0) =
+          p45_pfmPriceBoundETS_aux(ttot,regi) * sm_DptCO2_2_TDpGtC;
+      );
+      if(cm_pfmBindMode = 3,
+        Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmMPPriceETS_aux = p45_pfmMPPriceETS;
+        p45_pfmMPPriceETS(ttot,regi)$(p45_pfmMPPriceETS_aux(ttot,regi) > 0) =
+          p45_pfmMPPriceETS_aux(ttot,regi) * sm_DptCO2_2_TDpGtC;
+      );
+      display p45_pfmPhiETS;
+    );
+
 *** Convergence test. p45_pfmDelta is the largest change in ANY region's phi since
 *** the previous PFM call - a max, not a mean, so one region still moving keeps the
 *** loop open. A failed R call leaves the aux at its previous value; guarding on
@@ -215,6 +236,62 @@ if(cm_taxCO2_regiDiff = 11,
       pm_taxCO2eq(t,regi)$(t.val ge cm_startyear) = p45_pfmMPPrice(t,regi);
       display p45_pfmMPPrice;
     );
+  );
+
+*** --- sector-differentiated delivery: the ETS markup (ADR 0042) ---------------
+*** The three branches above set pm_taxCO2eq from the WORSE sector - the floor every
+*** market pays. This adds back, on the ETS market only, what the Bulk sector could
+*** bear beyond that floor.
+***
+*** Why a markup and not a second price: pm_taxemiMkt is ADDITIVE. q21_taxrevGHG
+*** charges pm_taxCO2eqSum on all CO2eq and q21_taxemiMkt then adds
+*** pm_taxemiMkt(m) * vm_co2eqMkt(m) per market (21_tax/on/equations.gms), so the
+*** effective ETS price is pm_taxCO2eq + pm_taxemiMkt("ETS"). Keeping the floor in
+*** pm_taxCO2eq means every OTHER consumer of pm_taxCO2eqSum - the MAC curves in
+*** core/presolve.gms, the biofuel emission factor, the trade tariffs - keeps working
+*** untouched. Putting the whole price into pm_taxemiMkt would have required auditing
+*** all of them.
+***
+*** ETS ~ Bulk (electricity + industry), ES + other ~ Diffuse (buildings + transport).
+*** The mapping is good but not a bijection: sector2emiMkt puts indst in BOTH ETS and
+*** ES, so industry's ES slice receives the Diffuse price. Deliberate, and it errs
+*** toward LESS differentiation - i.e. toward the old min() behaviour.
+***
+*** One-iteration lag, by design and pre-existing: core/presolve.gms runs before the
+*** module presolves, so p_priceCO2forMAC sees the previous iteration's markup. The
+*** SOLVE sees this one, because the equations read pm_taxemiMkt directly. The same
+*** lag already applies to pm_taxCO2eqSum, and at a fixed point it vanishes.
+  if(cm_pfmSectorMarkup = 1,
+    if(cm_pfmBindMode = 1,
+      p45_pfmPriceETS(t,regi)$(t.val ge cm_startyear) =
+        ( 1 - (1 - p45_pfmPhiETS(regi))
+              * rPower(1 - p45_regiDiff_lambda(regi), t.val - p45_regiDiff_startYr(regi)) )
+        * p45_taxCO2eq_anchor(t);
+    elseif cm_pfmBindMode = 2,
+      p45_pfmPriceETS(t,regi)$(t.val ge cm_startyear) =
+        min(p45_taxCO2eq_anchor(t), p45_pfmPriceBoundETS(t,regi));
+    elseif cm_pfmBindMode = 3,
+      p45_pfmPriceETS(t,regi)$(t.val ge cm_startyear) = p45_pfmMPPriceETS(t,regi);
+    );
+
+*** Clamped at zero: pm_taxemiMkt is a markup, and a negative one would SUBSIDISE ETS
+*** emissions relative to the rest of the economy. Where Bulk is the worse sector -
+*** 3 of 48 countries - the floor already is Bulk and the markup is correctly zero.
+*** A missing or stale companion also lands here as zero, which degrades to the old
+*** min() behaviour rather than to something invented.
+    pm_taxemiMkt(t,regi,"ETS")$(t.val ge cm_startyear) =
+      max(p45_pfmPriceETS(t,regi) - pm_taxCO2eq(t,regi), 0);
+    pm_taxemiMkt(t,regi,"ES")$(t.val ge cm_startyear) = 0;
+    pm_taxemiMkt(t,regi,"other")$(t.val ge cm_startyear) = 0;
+
+    p45_pfmMarkupShare_iter(iteration) =
+      sum((t,regi)$(t.val ge cm_startyear), 1$(pm_taxemiMkt(t,regi,"ETS") > 0))
+      / max(1, sum((t,regi)$(t.val ge cm_startyear), 1));
+    p45_pfmMarkupMean_iter(iteration) =
+      sum((t,regi)$(t.val ge cm_startyear), pm_taxemiMkt(t,regi,"ETS"))
+      / max(1, sum((t,regi)$(t.val ge cm_startyear), 1));
+    display "45_carbonprice: ETS markup applied on top of the economy-wide floor";
+    display p45_pfmMarkupShare_iter, pm_taxemiMkt;
   );
 
 *** --- infeasibility detection ------------------------------------------------

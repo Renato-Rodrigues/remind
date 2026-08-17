@@ -80,3 +80,6 @@ cm_MAgPIE_Nash,switch,not needed
 cm_TaxConv_tolerance,input,not needed
 cm_nashObjVal_tolerance,input,not needed
 cm_DevPriceAnticip_tolFactor,input,not needed
+cm_taxCO2_regiDiff,switch,PFM coupling criterion - nash only
+pm_pfmConverged,parameter,PFM coupling criterion - nash only
+pm_pfmInfesCode,parameter,PFM coupling criterion - nash only

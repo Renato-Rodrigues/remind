@@ -68,6 +68,20 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
   p45_pfmBinds(ttot,all_regi)  "1 where the political cap is the binding constraint"
   p45_pfmMPPrice(ttot,all_regi)     "mild-progression carbon price, T$/GtC (converted from the R side's US$/tCO2 on load in presolve.gms)"
   p45_pfmMPPrice_aux(ttot,all_regi) "as loaded from the PFM gdx, still in US$/tCO2"
+*** Sector-differentiated delivery (ADR 0042). The economy-wide symbols above carry the
+*** WORSE sector - the floor every market pays. These carry the BULK sector alone, and
+*** the difference becomes the ETS markup in pm_taxemiMkt. ETS ~ Bulk (electricity +
+*** industry), ES + other ~ Diffuse (buildings + transport). Inert unless
+*** cm_pfmSectorMarkup = 1, so a run with the switch off is bit-identical to before.
+  p45_pfmPhiETS(all_regi)           "Bulk feasibility share, for the ETS markup"
+  p45_pfmPhiETS_aux(all_regi)       "as loaded from the PFM gdx"
+  p45_pfmPriceBoundETS(ttot,all_regi)     "Bulk politically feasible price, T$/GtC"
+  p45_pfmPriceBoundETS_aux(ttot,all_regi) "as loaded from the PFM gdx, still in US$/tCO2"
+  p45_pfmMPPriceETS(ttot,all_regi)        "Bulk mild-progression carbon price, T$/GtC"
+  p45_pfmMPPriceETS_aux(ttot,all_regi)    "as loaded from the PFM gdx, still in US$/tCO2"
+  p45_pfmPriceETS(ttot,all_regi)          "the price the Bulk sector could bear, before the markup is taken against the floor, T$/GtC"
+  p45_pfmMarkupShare_iter(iteration)      "share of region-periods where the ETS markup is positive"
+  p45_pfmMarkupMean_iter(iteration)       "mean ETS markup over region-periods, T$/GtC"
 *** PFM Infeasibility detection
   p45_pfmMaxPrice              "highest carbon price anywhere in the current solution, US$/tCO2"
   p45_pfmRescaleHist(iteration) "budget-iteration rescale factor, kept to detect divergence"

@@ -38,3 +38,12 @@ s45_peakBudgYr_check,input,added by codeCheck
 sm_peakbudget_diff,input,added by codeCheck
 pm_NDCEmiTargetDeviation,input,added by codeCheck
 pm_GDPGross,input,added by codeCheck
+cm_pfmBindMode,switch,PFM coupling only (functionalForm)
+cm_pfmConvTol,switch,PFM coupling only (functionalForm)
+cm_pfmMaxPrice,switch,PFM coupling only (functionalForm)
+cm_pfmTheta,switch,PFM coupling only (functionalForm)
+cm_pfmInfesPatience,switch,PFM coupling only (functionalForm)
+cm_pfmSectorMarkup,switch,PFM coupling only (functionalForm)
+pm_pfmConverged,parameter,PFM coupling only (functionalForm)
+pm_pfmInfesCode,parameter,PFM coupling only (functionalForm)
+pm_taxemiMkt,parameter,PFM ETS markup only (functionalForm)

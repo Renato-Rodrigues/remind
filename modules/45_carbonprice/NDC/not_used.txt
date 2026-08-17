@@ -49,3 +49,12 @@ pm_regionalBudget_absDevTol,input,added by codeCheck
 cm_startyear,input,not used
 sm_D2005_2_D2017,input,not used
 cm_iterative_target_adj,input,not used
+cm_pfmBindMode,switch,PFM coupling only (functionalForm)
+cm_pfmConvTol,switch,PFM coupling only (functionalForm)
+cm_pfmMaxPrice,switch,PFM coupling only (functionalForm)
+cm_pfmTheta,switch,PFM coupling only (functionalForm)
+cm_pfmInfesPatience,switch,PFM coupling only (functionalForm)
+cm_pfmSectorMarkup,switch,PFM coupling only (functionalForm)
+pm_pfmConverged,parameter,PFM coupling only (functionalForm)
+pm_pfmInfesCode,parameter,PFM coupling only (functionalForm)
+pm_taxemiMkt,parameter,PFM ETS markup only (functionalForm)

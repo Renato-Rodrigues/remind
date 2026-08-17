@@ -50,3 +50,12 @@ cm_useInputGdxForCarbonPrice,input,added by codeCheck
 pm_factorRescale_taxCO2Regi_Funneled2,input,added by codeCheck
 pm_budgetDeviation,input,added by codeCheck
 pm_regionalBudget_absDevTol,input,added by codeCheck
+cm_pfmBindMode,switch,PFM coupling only (functionalForm)
+cm_pfmConvTol,switch,PFM coupling only (functionalForm)
+cm_pfmMaxPrice,switch,PFM coupling only (functionalForm)
+cm_pfmTheta,switch,PFM coupling only (functionalForm)
+cm_pfmInfesPatience,switch,PFM coupling only (functionalForm)
+cm_pfmSectorMarkup,switch,PFM coupling only (functionalForm)
+pm_pfmConverged,parameter,PFM coupling only (functionalForm)
+pm_pfmInfesCode,parameter,PFM coupling only (functionalForm)
+pm_taxemiMkt,parameter,PFM ETS markup only (functionalForm)
