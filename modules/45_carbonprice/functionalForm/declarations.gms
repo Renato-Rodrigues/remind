@@ -107,6 +107,14 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
   p45_pfmPriceMkt(ttot,all_regi,all_emiMkt)          "the price each market's sector could bear, before the markup is taken against the floor, T$/GtC"
   p45_pfmMarkupShare_iter(iteration)      "share of region-period-markets where the markup is positive"
   p45_pfmMarkupMean_iter(iteration)       "mean markup over region-period-markets, T$/GtC"
+*** The two survival checks (2026-08-17). pm_taxemiMkt is written in presolve and read by
+*** the solve, but 47_regipol's postsolve runs AFTER this module's and can zero or rewrite
+*** it - the same shape as defect 5, where phi was computed, applied and erased before the
+*** solve while every diagnostic still reported a healthy coupling. Written is what this
+*** module last set; Seen is what the next presolve finds still there.
+  p45_pfmMarkupWritten         "largest markup this module wrote at the end of the last presolve, T$/GtC"
+  p45_pfmMarkupSeen            "largest markup still present when the next presolve starts, T$/GtC"
+  p45_pfmPhiMktSpread          "max-min of the per-market share within a region, summed over regions - zero means the markup cannot differentiate anything"
 *** PFM Infeasibility detection
   p45_pfmMaxPrice              "highest carbon price anywhere in the current solution, US$/tCO2"
   p45_pfmRescaleHist(iteration) "budget-iteration rescale factor, kept to detect divergence"

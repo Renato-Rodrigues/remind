@@ -54,6 +54,26 @@ if(cm_taxCO2_regiDiff = 11,
     );
   );
 
+*** --- did the per-market markup survive the last postsolve? -------------------
+*** The pm_taxemiMkt analogue of the p45_regiDiff_ratio check above, and here for the same
+*** reason: this module writes pm_taxemiMkt in presolve, but 47_regipol's postsolve runs
+*** AFTER this one and both zeroes it (cm_regiExoPrice, postsolve.gms:960/984) and rewrites
+*** it (cm_emiMktTarget, postsolve.gms:384-436). datainput.gms aborts on the emiMktTarget
+*** collision, and cm_regiExoPrice is documented as incompatible - but "documented as
+*** incompatible" is exactly what defect 5 was, so this checks rather than assumes.
+***
+*** Reads pm_taxemiMkt as the previous postsolve left it, BEFORE the block further down
+*** rebuilds it - anywhere later the damage is repaired and hidden. Fires only when this
+*** module actually wrote a markup last time, so a legitimately zero markup (theta = 0,
+*** or a region where the floor already is the higher sector) cannot trip it.
+  if((cm_pfmSectorMarkup = 1) and (p45_pfmMarkupWritten > 1e-8),
+    p45_pfmMarkupSeen = smax((t,regi,emiMkt)$(t.val ge cm_startyear), pm_taxemiMkt(t,regi,emiMkt));
+    if(p45_pfmMarkupSeen < 1e-8,
+      display p45_pfmMarkupWritten, p45_pfmMarkupSeen, pm_taxemiMkt;
+      abort "45_carbonprice: the PFM per-market markup was written last presolve but is gone now - something erased pm_taxemiMkt between presolve and here. Check 47_regipol postsolve (cm_regiExoPrice, cm_emiMktTarget) - see ADR 0042 and COUPLING.md 11.4.";
+    );
+  );
+
 *** --- the coupling call, skipped once phi has converged -----------------------
 *** The loop is a fixed point: REMIND's energy system moves the ambition gaps, which
 *** move phi, which moves the price, which moves the energy system. It has converged
@@ -359,8 +379,28 @@ if(cm_taxCO2_regiDiff = 11,
     p45_pfmMarkupMean_iter(iteration) =
       sum((t,regi,emiMkt)$(t.val ge cm_startyear), pm_taxemiMkt(t,regi,emiMkt))
       / max(1, sum((t,regi,emiMkt)$(t.val ge cm_startyear), 1));
+
+*** Remember what we wrote, so the next presolve can tell "erased" from "legitimately zero".
+    p45_pfmMarkupWritten = smax((t,regi,emiMkt)$(t.val ge cm_startyear), pm_taxemiMkt(t,regi,emiMkt));
+
+*** LIVENESS. The companions degrade silently by design: a missing or stale one lands as a
+*** zero markup, i.e. the pre-ADR-0042 min() behaviour, which is the safe direction but is
+*** indistinguishable from "the markup is switched on and working" in any output. So if the
+*** per-market shares genuinely differ somewhere - the only case in which a markup is owed -
+*** a markup of exactly zero everywhere means the companions never arrived.
+*** Guarded on the shares, not on theta: at theta = 0 every share is 1, the spread is 0, and
+*** a zero markup is correct.
+    if(p45_pfmCallCount > 0,
+      p45_pfmPhiMktSpread = sum(regi,
+        smax(emiMkt, p45_pfmPhiMkt(regi,emiMkt)) - smin(emiMkt, p45_pfmPhiMkt(regi,emiMkt)));
+      if((p45_pfmPhiMktSpread > 1e-6) and (p45_pfmMarkupWritten < 1e-8),
+        display p45_pfmPhiMkt, p45_pfmPhiMktSpread, p45_pfmMarkupWritten;
+        abort "45_carbonprice: the per-market shares differ but every markup is zero - the ADR 0042 companions did not reach GAMS, so this run is silently the old min() behaviour wearing a sector-differentiated label. Check that the R side wrote p45_pfmPhiMkt/p45_pfmPriceBoundMkt/p45_pfmMPPriceMkt and that the gdx is fresh (p45_pfmFresh).";
+      );
+    );
+
     display "45_carbonprice: per-market markups applied on top of the economy-wide floor";
-    display p45_pfmMarkupShare_iter, pm_taxemiMkt;
+    display p45_pfmMarkupShare_iter, p45_pfmMarkupWritten, pm_taxemiMkt;
   );
 
 *** --- infeasibility detection ------------------------------------------------

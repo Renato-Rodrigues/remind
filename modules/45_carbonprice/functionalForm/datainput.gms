@@ -157,6 +157,11 @@ p45_pfmCallCount = 0;
 p45_pfmInfesCount = 0;
 p45_pfmDelta = 0;
 p45_pfmMaxPrice = 0;
+*** Zero means "this module has not written a markup yet", so the erasure check in
+*** presolve.gms cannot fire before there is anything to erase.
+p45_pfmMarkupWritten = 0;
+p45_pfmMarkupSeen = 0;
+p45_pfmPhiMktSpread = 0;
 p45_factorRescale_taxCO2_Funneled(iteration) = 1;
 
 *** Step III.-1: Two controllers must never own pm_taxemiMkt at once (ADR 0042).
