@@ -395,7 +395,7 @@ if(cm_taxCO2_regiDiff = 11,
         smax(emiMkt, p45_pfmPhiMkt(regi,emiMkt)) - smin(emiMkt, p45_pfmPhiMkt(regi,emiMkt)));
       if((p45_pfmPhiMktSpread > 1e-6) and (p45_pfmMarkupWritten < 1e-8),
         display p45_pfmPhiMkt, p45_pfmPhiMktSpread, p45_pfmMarkupWritten;
-        abort "45_carbonprice: the per-market shares differ but every markup is zero - the ADR 0042 companions did not reach GAMS, so this run is silently the old min() behaviour wearing a sector-differentiated label. Check that the R side wrote p45_pfmPhiMkt/p45_pfmPriceBoundMkt/p45_pfmMPPriceMkt and that the gdx is fresh (p45_pfmFresh).";
+        abort "45_carbonprice: market shares differ but markups are zero. Check that R wrote p45_pfmPhiMkt/p45_pfmPriceBoundMkt and GDX is fresh.";
       );
     );
 
