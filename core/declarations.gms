@@ -39,7 +39,7 @@ pm_taxCO2eq(ttot,all_regi)                           "CO2 tax path calculated in
 
 *** PFM political-feasibility coupling
 pm_pfmConverged                                      "1 once the PFM feasibility share phi has converged (45_carbonprice)"
-pm_pfmInfesCode                                      "PFM coupling infeasibility code: 0 ok, 1 price explosion, 2 budget-iteration divergence, 3 missing/zero price bound"
+pm_pfmInfesCode                                      "PFM coupling infeasibility code: 0 ok, 1 price explosion, 2 budget-iteration divergence, 3 missing/zero price bound, 4 budget loop stuck against a fully binding cap"
 pm_taxCO2eq_iter(iteration,ttot,all_regi)            "CO2 tax path (pm_taxCO2eq) tracked over iterations [T$/GtC]"
 pm_taxCO2eq_anchor_iterationdiff(ttot)               "difference in global anchor carbon price to the last iteration [T$/GtC]"
 

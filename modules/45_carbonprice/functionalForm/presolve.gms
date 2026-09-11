@@ -96,6 +96,12 @@ if(cm_taxCO2_regiDiff = 11,
     put "theta: ", cm_pfmTheta:0:6 /;
     put "convTol: ", cm_pfmConvTol:0:6 /;
     put "iteration: ", iteration.val:0:0 /;
+*** Does the political gap close, or persist? Handed over for the same reason theta is:
+*** it is a per-scenario switch, and an .Rprofile copy that disagreed with the scenario
+*** row would produce a complete, wrong run. 0 forces every lambda to zero on the R side -
+*** BOTH the economy-wide floor rate and the per-market ones, so the floor and the markets
+*** stay on one rate (the asymmetry fixed on 2026-09-11 was exactly them disagreeing).
+    put "gapClosure: ", cm_pfmGapClosure:0:0 /;
 *** REMIND's solution before cm_startyear is FIXED to the reference run, so anything the
 *** R side evaluates in that window cannot respond to the coupling. phi used to be pinned
 *** at the first projection year (2025) while cm_startyear was 2030 - so phi was computed
@@ -125,6 +131,42 @@ if(cm_taxCO2_regiDiff = 11,
     Execute_Loadpoint 'p45_regiDiff_phi' p45_regiDiff_phi_aux = p45_regiDiff_phi;
     p45_regiDiff_phi(regi)$(p45_regiDiff_phi_aux(regi) > 0) = p45_regiDiff_phi_aux(regi);
     p45_pfmCallCount = p45_pfmCallCount + 1;
+
+*** The ECONOMY-WIDE closure rate, which the "apply phi" block below builds the mode-1
+*** FLOOR from. Loaded here for the same reason p45_pfmLambdaMkt is: it is a property of
+*** the FIT, not of the scenario file, so the only other source is whatever value the last
+*** offline exportFeasibilityRegiDiff() happened to write into the seed .inc.
+***
+*** Added 2026-09-11, and it is a FIX. Before it NOTHING loaded this symbol in a coupled
+*** run - datainput.gms sets it to 0, the seed .inc writes 0 (the documented "the gap
+*** persists" default), and only the per-market companion was refreshed. So mode 1 built
+*** its floor at lambda = 0, i.e. ratio(t) = phi flat for the whole horizon, while each
+*** market's own path in the markup block closed on the anchor at the frontier's speeds.
+***
+*** What that broke is NOT what it looks like. A market pays
+*** pm_taxCO2eq + max(priceMkt - pm_taxCO2eq, 0) = max(floor, priceMkt), and priceMkt was
+*** always the larger, so THE MARKET PRICES WERE ALREADY THE PER-SECTOR LAMBDA PATHS and
+*** this load does not move them. It moves the FLOOR, up onto the same path. What was
+*** wrong is that (a) pm_taxCO2eq was the price nobody paid, yet core/presolve.gms turns
+*** it into p_priceCO2forMAC and every MAC curve - all non-CO2 and process abatement -
+*** reads it: at EU21 -PFMratio 2050 it was 126 $/tCO2 against market prices of 224.6 and
+*** 240.1, because (1-0.0730)^20 = 0.2196 against 0.50; and (b) pm_taxemiMkt was mostly a
+*** SPEED gap, not the SECTOR gap ADR 0042 defines it as. With the rates consistent the
+*** binding sector's markup is exactly zero, which is that ADR's stated invariant.
+*** Measured on the 2026-08-26/29 batch; see SCENARIOS.md 1.1a and 4.1a.
+***
+*** Keeps a "> 0" test ON TOP of the freshness stamp, exactly as p45_pfmLambdaMkt does and
+*** for the same reason: 0 is this parameter's documented default, so an absent symbol and
+*** a deliberate zero are indistinguishable, and keeping the previous value is the
+*** conservative reading of both. An export that fails therefore reproduces the pre-fix
+*** behaviour exactly rather than inventing a rate.
+    p45_regiDiff_lambda_aux(regi) = 0;
+    Execute_Loadpoint 'p45_regiDiff_phi' p45_regiDiff_lambda_aux = p45_regiDiff_lambda;
+    if(p45_pfmFresh = 1,
+      p45_regiDiff_lambda(regi)$(p45_regiDiff_lambda_aux(regi) > 0) =
+        p45_regiDiff_lambda_aux(regi);
+    );
+    display p45_regiDiff_lambda;
 
 *** Bind mode 2 also needs the ABSOLUTE politically feasible price. Same guard: a
 *** zero means the R side did not supply it, so the previous value is kept rather
@@ -349,11 +391,19 @@ if(cm_taxCO2_regiDiff = 11,
   if(cm_pfmSectorMarkup = 1,
 *** Each market's OWN closure rate, not p45_regiDiff_lambda. The economy-wide rate is the
 *** one that survived sectorRule = "min", which takes the SLOWER of the two speeds -
-*** Diffuse, 0.0770/yr against Bulk's 0.1023/yr (MODEL.md 4.3). Using it here would let
+*** Diffuse, 0.0730/yr against Bulk's 0.1105/yr at Run-Group v4. Using it here would let
 *** the faster sector converge on the anchor at the slower one's pace and understate the
 *** markup by roughly a third. Modes 2 and 3 never had this problem: they receive
 *** finished per-sector price paths from R. Mode 1 is the only branch that rebuilds the
 *** path inside GAMS.
+***
+*** Read this together with the load added above on 2026-09-11. Until then the economy-wide
+*** rate was not "the slower of the two speeds" - it was ZERO, because nothing refreshed it
+*** during a coupled run. The floor then held phi flat for the whole horizon while this block
+*** closed each market on the anchor, so the markup below was mostly the SPEED difference
+*** rather than the sector difference it is defined as, and the binding sector - whose markup
+*** must be exactly zero - carried a large one. The two rates must come from the same fit and
+*** the same reconciliation rule, or the markup stops being a markup. SCENARIOS.md 1.1a.
     if(cm_pfmBindMode = 1,
       p45_pfmPriceMkt(t,regi,emiMkt)$(t.val ge cm_startyear) =
         ( 1 - (1 - p45_pfmPhiMkt(regi,emiMkt))
@@ -408,8 +458,27 @@ if(cm_taxCO2_regiDiff = 11,
 *** a blown-up result cannot be quoted as a feasible one. p45_pfmInfesCount requires
 *** cm_pfmInfesPatience CONSECUTIVE flagged iterations, so a single noisy Nash
 *** iteration does not condemn the run - and one clean iteration resets it.
-  p45_pfmMaxPrice = smax((t,regi)$(t.val ge cm_startyear), pm_taxCO2eq(t,regi));
-  p45_pfmRescaleHist(iteration) = p45_factorRescale_taxCO2_Funneled(iteration);
+*** UNIT. pm_taxCO2eq is T$/GtC; cm_pfmMaxPrice is US$/tCO2, as its description and the
+*** scenario config both say. Until 2026-09-11 they were compared directly, which put the
+*** effective trigger at 5000 T$/GtC = ~1.36 MILLION $/tCO2 - 272x too lax, so detector (1)
+*** could not fire on any plausible run. Observed across the 2026-08-26/29 batch: 0.29-3.17
+*** T$/GtC, i.e. 79-863 $/tCO2. Convert on assignment so the parameter finally means what it
+*** is declared to mean, and so the display below is readable.
+  p45_pfmMaxPrice = smax((t,regi)$(t.val ge cm_startyear), pm_taxCO2eq(t,regi))
+                    / sm_DptCO2_2_TDpGtC;
+*** The RAW rescale factor, not the funnelled one, and read as the previous iteration wrote
+*** it. Two things were wrong here before 2026-09-11 and they compounded:
+***   (i)  p45_factorRescale_taxCO2_Funneled(iteration) is a POSTSOLVE parameter, read here
+***        in PRESOLVE of the same iteration - i.e. before it has been written;
+***   (ii) the funnel holds its output near 1 by construction, so even with the timing
+***        fixed it cannot express "the budget loop is stuck".
+*** In EU21 -PFMlevelC the recorded history was 1.000 for all 100 iterations while the RAW
+*** factor sat at 1.249 for 90 consecutive iterations - the budget loop asking for a 25%
+*** price rise every iteration and getting nothing.
+  p45_pfmRescaleHist(iteration)$(ord(iteration) > 1) =
+    sum(iteration2$(ord(iteration2) eq ord(iteration) - 1),
+        p45_factorRescale_taxCO2(iteration2));
+  p45_pfmRescaleHist(iteration)$(ord(iteration) le 1) = 1;
   pm_pfmInfesCode = 0;
 
 *** (1) Price explosion. The SILENT failure: the solve succeeds and the numbers look
@@ -421,8 +490,12 @@ if(cm_taxCO2_regiDiff = 11,
 *** (2) Budget iteration diverging: the rescale factor should approach 1 as the anchor
 *** settles. Persistently far from 1 means the budget cannot be met by rescaling, which
 *** under bind mode 2 is the expected consequence of a binding political cap.
+*** NOTE this still will not catch the 2026-08-26/29 rule-C failure even with the raw
+*** factor: it sat at 1.249, and |1.249 - 1| = 0.249 is inside the 0.5 threshold. That is
+*** deliberate - 0.5 is a blow-up threshold, and a loop can be hopelessly stuck at a modest
+*** factor. Detector (4) is the one that catches "stuck"; this one catches "exploding".
   if((pm_pfmInfesCode = 0) and (ord(iteration) > 5) and
-     (abs(p45_factorRescale_taxCO2_Funneled(iteration) - 1) > 0.5),
+     (abs(p45_pfmRescaleHist(iteration) - 1) > 0.5),
     pm_pfmInfesCode = 2;
   );
 
@@ -441,6 +514,30 @@ if(cm_taxCO2_regiDiff = 11,
     );
   );
 
+*** (4) The budget loop is STUCK, which is what the 2026-08-26/29 batch actually did and
+*** what neither (1) nor (2) caught. All four rule-C runs ended on cm_iteration_max between
+*** 118 and 288 Gt CO2 over a 1000 Gt budget whose tolerance is 2 Gt, and reported
+*** o_modelstat = 2, pm_pfmInfesCode = 0, pm_pfmConverged = 1. TODO.md item 17.
+***
+*** The signature is specific and cannot occur in a healthy run: the political cap is
+*** setting the price EVERYWHERE (p45_pfmBindShare_iter -> 1), so raising the anchor moves
+*** no price and the budget loop has no lever left, while the budget deviation stays an
+*** order of magnitude outside its own tolerance. A converging mode-2 run sits near 0.5,
+*** not 1.
+***
+*** Reads the PREVIOUS iteration's entries: both o45_diff_to_Budg and the bind share are
+*** written after this point in the loop. o45_diff_to_Budg is written only inside
+*** postsolve's cm_iterative_target_adj block, so it stays 0 in the adj = 0 family and this
+*** check is self-gating - a rule-B run cannot trip it.
+  if((pm_pfmInfesCode = 0) and (ord(iteration) > 20) and (cm_pfmBindMode = 2),
+    if((abs(sum(iteration2$(ord(iteration2) eq ord(iteration) - 1),
+                o45_diff_to_Budg(iteration2))) > 10 * cm_budgetCO2_absDevTol) and
+       (sum(iteration2$(ord(iteration2) eq ord(iteration) - 1),
+            p45_pfmBindShare_iter(iteration2)) > 0.99),
+      pm_pfmInfesCode = 4;
+    );
+  );
+
   if(pm_pfmInfesCode > 0,
     p45_pfmInfesCount = p45_pfmInfesCount + 1;
   else
@@ -448,7 +545,7 @@ if(cm_taxCO2_regiDiff = 11,
   );
 
   if(p45_pfmInfesCount >= cm_pfmInfesPatience,
-    display "PFM COUPLING INFEASIBLE - see pm_pfmInfesCode (1 price explosion, 2 budget divergence, 3 bound below current policy)";
+    display "PFM COUPLING INFEASIBLE - see pm_pfmInfesCode (1 price explosion, 2 budget divergence, 3 bound below current policy, 4 budget loop stuck against a fully binding cap)";
     display pm_pfmInfesCode, p45_pfmMaxPrice, p45_pfmInfesCount;
     execute_unload "pfm_infeasible.gdx", pm_pfmInfesCode, p45_pfmMaxPrice, p45_pfmInfesCount, pm_taxCO2eq, p45_pfmPriceBound, p45_regiDiff_phi;
   );

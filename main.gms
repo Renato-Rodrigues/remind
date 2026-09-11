@@ -1518,6 +1518,32 @@ parameter
   cm_pfmSectorMarkup   "1 = deliver Bulk/Diffuse as floor + ETS markup, 0 = collapse with min"
 ;
   cm_pfmSectorMarkup = 1;      !! def = 1  !! regexp = 0|1
+*** cm_pfmGapClosure  Does the political gap CLOSE over the horizon, or persist?
+***                 0 = persist. Every closure rate lambda is forced to zero, so a region
+***                     handed phi keeps paying phi x anchor for the whole horizon. This is
+***                     exportFeasibilityRegiDiff()'s documented default and the stated
+***                     reason bind mode 11 exists: every other realization forces
+***                     convergence to a uniform global price by an assumed date.
+***                 1 = close at the frontier's estimated ECM adjustment speeds
+***                     (Run-Group v4: Bulk 0.1105/yr, Diffuse 0.0730/yr). At that rate 78%
+***                     of the gap is gone by 2050, so phi = 0.50 pays 0.89 x anchor.
+***
+***                 DEFAULT 0, decided 2026-09-11. The estimated lambda cannot carry the
+***                 claim: it fails a forecast-skill test against persistence (-0.123 Bulk,
+***                 -0.797 Diffuse) and a placebo battery on panels built with NO adjustment
+***                 by construction returns lambda-hat 0.281 / 0.107 - LARGER than the
+***                 estimates themselves. So "the gap closes at 7.3%/yr" is not a measurement
+***                 this project can defend. Setting 1 is the declared SENSITIVITY, and it is
+***                 not a small one: it moves mode R's cross-regional spread between ~1.98x
+***                 and 1.12x and moves every mode-L price bound with it.
+***
+***                 Passed to R via pfm-coupling-runtime.yml, so it is set here ONLY - an
+***                 .Rprofile copy that disagreed would produce a complete, wrong run.
+***                 TODO.md 1e-a, SCENARIOS.md 1.1a, COUPLING.md 11.2a.
+parameter
+  cm_pfmGapClosure   "0 = the political gap persists (lambda = 0), 1 = it closes at the frontier's estimated rates"
+;
+  cm_pfmGapClosure = 0;      !! def = 0  !! regexp = 0|1
 
 *' cm_rcp_scen       "chooses RCP scenario"
 *'

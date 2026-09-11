@@ -56,6 +56,7 @@ parameters
 p45_regiDiff_phi(all_regi)                  "political feasibility share: regional carbon price as a persistent fraction of the global anchor (cm_taxCO2_regiDiff = 11)"
 p45_regiDiff_lambda(all_regi)               "political closure rate at which the feasibility share approaches 1 (0 = gap persists for the whole horizon)"
 p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi back from the PFM coupling gdx"
+p45_regiDiff_lambda_aux(all_regi)           "auxiliary parameter for loading the economy-wide closure rate back from the PFM coupling gdx"
 *** PFM convergence. The coupling is a fixed point in phi; it has converged when a further PFM call stops changing phi. Once converged the R call is skipped for the rest of the run - phi is FROZEN, not reset, and keeps being applied.
   p45_pfmDelta_aux(all_regi)   "max abs change in phi since the previous PFM call, as loaded from the gdx"
   p45_pfmIterSeen_aux(all_regi) "the Nash iteration the R side echoed back; proves the gdx is this call's, not a leftover"
@@ -96,8 +97,15 @@ p45_regiDiff_phi_aux(all_regi)              "auxiliary parameter for loading phi
 *** finished PRICE PATH from R, built per sector. Mode 1 rebuilds its path here in GAMS
 *** from phi and a rate, so it needs the rate as a symbol or it silently reuses
 *** p45_regiDiff_lambda, which under sectorRule = "min" is the SLOWER sector's speed -
-*** understating exactly the headroom the markup expresses. Bulk 0.1023/yr vs Diffuse
-*** 0.0770/yr (MODEL.md 4.3).
+*** understating exactly the headroom the markup expresses. At Run-Group v4: Bulk
+*** 0.1105/yr vs Diffuse 0.0730/yr. (Quote the Run-Group with the rate. MODEL.md 4.3
+*** still publishes the v1/v3 pair, 0.1023 / 0.0770.)
+***
+*** 2026-09-11: that sentence was true of the DESIGN and false of the RUN until presolve
+*** started loading p45_regiDiff_lambda from the coupling gdx. It was 0 in every coupled
+*** run before then, not min(lambda), so the floor never closed its gap at all and the
+*** markup below carried the SPEED difference on top of the sector one - including for the
+*** binding sector, whose markup is supposed to be exactly zero. SCENARIOS.md 1.1a.
   p45_pfmLambdaMkt(all_regi,all_emiMkt)        "per-market political closure rate, for the mode-1 path"
   p45_pfmLambdaMkt_aux(all_regi,all_emiMkt)    "as loaded from the PFM gdx"
   p45_pfmPriceBoundMkt(ttot,all_regi,all_emiMkt)     "per-market politically feasible price, T$/GtC"
