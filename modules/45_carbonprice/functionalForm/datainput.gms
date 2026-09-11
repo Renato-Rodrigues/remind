@@ -162,6 +162,7 @@ p45_pfmMaxPrice = 0;
 p45_pfmMarkupWritten = 0;
 p45_pfmMarkupSeen = 0;
 p45_pfmPhiMktSpread = 0;
+p45_factorRescale_taxCO2(iteration) = 1;
 p45_factorRescale_taxCO2_Funneled(iteration) = 1;
 
 *** Step III.-1: Two controllers must never own pm_taxemiMkt at once (ADR 0042).
