@@ -164,6 +164,8 @@ p45_pfmMarkupSeen = 0;
 p45_pfmPhiMktSpread = 0;
 p45_factorRescale_taxCO2(iteration) = 1;
 p45_factorRescale_taxCO2_Funneled(iteration) = 1;
+o45_diff_to_Budg(iteration) = 0;
+p45_pfmBindShare_iter(iteration) = 0;
 
 *** Step III.-1: Two controllers must never own pm_taxemiMkt at once (ADR 0042).
 *** 47_regipol/regiCarbonPrice ITERATES pm_taxemiMkt against emission-market targets
@@ -189,6 +191,8 @@ p45_regiDiff_lambda(regi) = 0;
 *** export yields a ZERO markup in every market - i.e. the pre-ADR-0042 min() behaviour -
 *** rather than an invented differentiation.
 p45_pfmPhiMkt(regi,emiMkt) = 1;
+p45_pfmPriceBound(ttot,regi) = 0;
+p45_pfmBinds(ttot,regi) = 0;
 p45_pfmPriceBoundMkt(ttot,regi,emiMkt) = 0;
 p45_pfmMPPriceMkt(ttot,regi,emiMkt) = 0;
 p45_pfmPriceMkt(ttot,regi,emiMkt) = 0;
