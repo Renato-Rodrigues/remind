@@ -538,6 +538,33 @@ if(cm_taxCO2_regiDiff = 11,
     );
   );
 
+*** (W) THE BLIND BAND BETWEEN "fine" AND "stuck". Detector (4) fires only past 10x the
+*** budget tolerance, deliberately: a healthy mode-2 run sits near bindShare 0.5 and a
+*** tighter trigger would condemn ordinary slow convergence. But that leaves a band -
+*** 2 to 20 GtCO2 over budget - in which a run can end on cm_iteration_max with the cap
+*** binding everywhere and still report pm_pfmInfesCode = 0. H12 -PFMlevelC did exactly
+*** that on 2026-09-14: 12.3 GtCO2 outside a 2 GtCO2 tolerance, bindShare = 1.000, clean.
+***
+*** This is NOT an infeasibility and must not become one - the run is usable, its near-term
+*** markets clear, and the overshoot is a reportable property rather than a failure. It is a
+*** WARNING, carried in its own parameter so nothing that tests pm_pfmInfesCode changes
+*** behaviour, and so a reader who checks only the infeasibility code cannot be misled.
+***
+*** Same self-gating as (4): o45_diff_to_Budg is written only inside postsolve's
+*** cm_iterative_target_adj block, so it stays 0 in the adj = 0 family and a rule-B run
+*** cannot raise this. No patience counter - unlike an infeasibility, one iteration at the
+*** cap IS the whole event, because there is no iteration after it.
+  if((ord(iteration) >= cm_iteration_max) and (cm_iterative_target_adj > 0),
+    if(abs(sum(iteration2$(ord(iteration2) eq ord(iteration) - 1),
+               o45_diff_to_Budg(iteration2))) > cm_budgetCO2_absDevTol,
+      pm_pfmBudgetWarn = 1;
+      pm_pfmBudgetWarnDev = sum(iteration2$(ord(iteration2) eq ord(iteration) - 1),
+                                o45_diff_to_Budg(iteration2));
+      display "PFM BUDGET WARNING - run ended on cm_iteration_max outside cm_budgetCO2_absDevTol; see pm_pfmBudgetWarnDev. Usable, but the budget was NOT met.";
+      display pm_pfmBudgetWarn, pm_pfmBudgetWarnDev;
+    );
+  );
+
   if(pm_pfmInfesCode > 0,
     p45_pfmInfesCount = p45_pfmInfesCount + 1;
   else

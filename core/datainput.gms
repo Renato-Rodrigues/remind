@@ -1756,5 +1756,7 @@ vm_changeProdStartyearCost.l(t,regi,te) = 0;
 *' 0 / 0 is also the correct uncoupled meaning: nothing to wait for, nothing wrong.
 pm_pfmConverged = 0;
 pm_pfmInfesCode = 0;
+pm_pfmBudgetWarn = 0;
+pm_pfmBudgetWarnDev = 0;
 
 *** EOF ./core/datainput.gms
