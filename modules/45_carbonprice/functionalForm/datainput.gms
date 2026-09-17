@@ -128,6 +128,27 @@ if((cm_iterative_target_adj = 0) or (cm_iterative_target_adj = 9) or ((cm_iterat
 
 *** Always set carbon price constant after 2100 to prevent huge taxes after 2100 and the resulting convergence problems
 p45_taxCO2eq_anchor(t)$(t.val gt 2100) = p45_taxCO2eq_anchor("2100");
+
+*** Part II.b (cm_pfmAnchorFromGdx = on): replace the anchor built above by the one a donor run
+*** converged to, read from input_carbonprice.gdx (path_gdx_carbonprice). Parts I-II still run, so
+*** their switch checks still apply, but their result is discarded. Only the ANCHOR is taken: the
+*** regional prices, phi and the per-market markup are rebuilt on it by Part III and presolve.gms.
+$ifThen.pfmAnchorFromGdx "%cm_pfmAnchorFromGdx%" == "on"
+if(cm_iterative_target_adj ne 0,
+  abort "45_carbonprice: cm_pfmAnchorFromGdx = on requires cm_iterative_target_adj = 0 - otherwise postsolve.gms rescales the pinned anchor and it is no longer the donor's.";
+);
+p45_taxCO2eq_anchor_fromGdx(ttot) = 0;
+Execute_Loadpoint 'input_carbonprice' p45_taxCO2eq_anchor_fromGdx = p45_taxCO2eq_anchor;
+if(smin(ttot$((ttot.val ge cm_startyear) and (ttot.val le 2100)), p45_taxCO2eq_anchor_fromGdx(ttot)) le 0,
+  display p45_taxCO2eq_anchor_fromGdx;
+  abort "45_carbonprice: cm_pfmAnchorFromGdx = on but input_carbonprice.gdx has no positive p45_taxCO2eq_anchor from cm_startyear to 2100 - is path_gdx_carbonprice a functionalForm run?";
+);
+p45_taxCO2eq_anchor(ttot)$(ttot.val ge 2005) = p45_taxCO2eq_anchor_fromGdx(ttot);
+p45_taxCO2eq_anchor_until2150(ttot) = p45_taxCO2eq_anchor(ttot);
+p45_taxCO2eq_anchor(t)$(t.val gt 2100) = p45_taxCO2eq_anchor("2100");
+display "45_carbonprice: anchor pinned from input_carbonprice.gdx (cm_pfmAnchorFromGdx = on)", p45_taxCO2eq_anchor_fromGdx;
+$endIf.pfmAnchorFromGdx
+
 display p45_taxCO2eq_anchor_until2150, p45_taxCO2eq_anchor;
 
 ***-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

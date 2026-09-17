@@ -1546,6 +1546,19 @@ parameter
 ;
   cm_pfmGapClosure = 0;      !! def = 0  !! regexp = 0|1
 
+*** cm_pfmAnchorFromGdx  Pin the global anchor to the one another run converged to.
+***                 off = the anchor is built from cm_taxCO2_startyear / cm_peakBudgYr as usual.
+***                 on  = after Parts I-II of functionalForm/datainput.gms, p45_taxCO2eq_anchor is
+***                       replaced by the p45_taxCO2eq_anchor stored in input_carbonprice.gdx - set
+***                       path_gdx_carbonprice to the donor run (e.g. -PkBudg1000-PFMgate). Requires
+***                       cm_iterative_target_adj = 0, so nothing rescales it afterwards.
+***                 The idea is cm_regiExoPrice_fromFile's (47_regipol), adapted: that switch
+***                 overwrites the REGIONAL price and zeroes pm_taxemiMkt in 47's postsolve, which
+***                 erases phi and the ADR 0042 markup. This one replaces only the ANCHOR, before
+***                 the PFM steps build regional prices on it. Used by the FIXPRICE rows
+***                 (TODO.md 14g): the budget-consistent price path without typing it into a CSV.
+$setGlobal cm_pfmAnchorFromGdx  off    !! def = off  !! regexp = off|on
+
 *' cm_rcp_scen       "chooses RCP scenario"
 *'
 *' *  (none): no RCP scenario, standard setting

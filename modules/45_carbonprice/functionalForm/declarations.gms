@@ -26,6 +26,9 @@ p45_taxCO2eq_anchor(ttot)                   "global anchor trajectory for region
 p45_taxCO2eq_anchor_until2150(ttot)         "global anchor trajectory continued until 2150 - as if there was no change in trajectory after cm_peakBudgYr. Needed if cm_peakBudgYr was shifted right"
 p45_taxCO2eq_regiDiff(ttot,all_regi)        "regional differentiated CO2 price trajectories in T$/GtC = $/kgC, used as intermediate step in deriving pm_taxCO2eq from p45_taxCO2eq_anchor"
 p45_taxCO2eq_path_gdx_ref(ttot,all_regi)    "CO2 tax trajectories from path_gdx_ref"
+$ifThen.pfmAnchorFromGdx "%cm_pfmAnchorFromGdx%" == "on"
+p45_taxCO2eq_anchor_fromGdx(ttot)           "global anchor trajectory read from input_carbonprice.gdx (cm_pfmAnchorFromGdx = on) in T$/GtC = $/kgC"
+$endIf.pfmAnchorFromGdx
 
 p45_gdppcap_PPP(ttot,all_regi)              "GDP per capita (1e3 $ PPP 2017)"
 p45_regiDiff_ratio(ttot,all_regi)           "ratio between global anchor and regional differentiated CO2 price trajectories"
