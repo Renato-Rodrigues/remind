@@ -1525,17 +1525,18 @@ parameter
 ***                     reason bind mode 11 exists: every other realization forces
 ***                     convergence to a uniform global price by an assumed date.
 ***                 1 = close at the frontier's estimated ECM adjustment speeds
-***                     (Run-Group v4: Bulk 0.1105/yr, Diffuse 0.0730/yr). At that rate 78%
-***                     of the gap is gone by 2050, so phi = 0.50 pays 0.89 x anchor.
+***                     (Run-Group v5: Bulk 0.1094/yr, Diffuse 0.0769/yr), so most of the
+***                     gap is gone by mid-century and phi = 0.50 pays close to the anchor.
 ***
 ***                 DEFAULT 0, decided 2026-09-11. The estimated lambda cannot carry the
-***                 claim: it fails a forecast-skill test against persistence (-0.123 Bulk,
-***                 -0.797 Diffuse) and a placebo battery on panels built with NO adjustment
-***                 by construction returns lambda-hat 0.281 / 0.107 - LARGER than the
-***                 estimates themselves. So "the gap closes at 7.3%/yr" is not a measurement
-***                 this project can defend. Setting 1 is the declared SENSITIVITY, and it is
-***                 not a small one: it moves mode R's cross-regional spread between ~1.98x
-***                 and 1.12x and moves every mode-L price bound with it.
+***                 claim: it fails a forecast-skill test against persistence (-0.180 Bulk,
+***                 -0.698 Diffuse, v5) and a placebo battery on panels built with NO
+***                 adjustment by construction returns lambda-hat 0.291 / 0.104 on the deployed
+***                 right-hand side - above the Bulk estimate and around the Diffuse one. So
+***                 "the gap closes at 7.7%/yr" is not a measurement this project can defend.
+***                 Setting 1 is the declared SENSITIVITY, and it is not a small one: on the v5
+***                 batch it moves mode R's regional spread from 1.88x to 1.10x (EU21) and raises
+***                 the mode-L rule-B cost from +128 to +192 Gt CO2.
 ***
 ***                 Passed to R via pfm-coupling-runtime.yml, so it is set here ONLY - an
 ***                 .Rprofile copy that disagreed would produce a complete, wrong run.

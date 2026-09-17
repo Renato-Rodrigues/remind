@@ -97,9 +97,8 @@ p45_regiDiff_lambda_aux(all_regi)           "auxiliary parameter for loading the
 *** finished PRICE PATH from R, built per sector. Mode 1 rebuilds its path here in GAMS
 *** from phi and a rate, so it needs the rate as a symbol or it silently reuses
 *** p45_regiDiff_lambda, which under sectorRule = "min" is the SLOWER sector's speed -
-*** understating exactly the headroom the markup expresses. At Run-Group v4: Bulk
-*** 0.1105/yr vs Diffuse 0.0730/yr. (Quote the Run-Group with the rate. MODEL.md 4.3
-*** still publishes the v1/v3 pair, 0.1023 / 0.0770.)
+*** understating exactly the headroom the markup expresses. At Run-Group v5: Bulk
+*** 0.1094/yr vs Diffuse 0.0769/yr. (Quote the Run-Group with the rate; MODEL.md 4.3.)
 ***
 *** 2026-09-11: that sentence was true of the DESIGN and false of the RUN until presolve
 *** started loading p45_regiDiff_lambda from the coupling gdx. It was 0 in every coupled

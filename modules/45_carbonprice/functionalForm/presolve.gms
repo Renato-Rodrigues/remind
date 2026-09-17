@@ -391,9 +391,9 @@ if(cm_taxCO2_regiDiff = 11,
   if(cm_pfmSectorMarkup = 1,
 *** Each market's OWN closure rate, not p45_regiDiff_lambda. The economy-wide rate is the
 *** one that survived sectorRule = "min", which takes the SLOWER of the two speeds -
-*** Diffuse, 0.0730/yr against Bulk's 0.1105/yr at Run-Group v4. Using it here would let
+*** Diffuse, 0.0769/yr against Bulk's 0.1094/yr at Run-Group v5. Using it here would let
 *** the faster sector converge on the anchor at the slower one's pace and understate the
-*** markup by roughly a third. Modes 2 and 3 never had this problem: they receive
+*** markup. Modes 2 and 3 never had this problem: they receive
 *** finished per-sector price paths from R. Mode 1 is the only branch that rebuilds the
 *** path inside GAMS.
 ***
