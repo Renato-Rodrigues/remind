@@ -139,6 +139,32 @@ p45_regiDiff_lambda_aux(all_regi)           "auxiliary parameter for loading the
   p45_pfmBoundMean_iter(iteration,all_regi)  "mean political price bound per region - the REMIND -> PFM channel"
   p45_pfmAnchor_iter(iteration)              "global anchor - what the budget iteration is doing meanwhile"
   p45_pfmConverged_iter(iteration)           "1 from the call at which phi converged"
+*** The mode-2 cap rebuilt in GAMS (cm_pfmBoundRebuild = 1, main.gms). The R side's own bound is
+*** kept alongside, unchanged, so the rebuild can be checked against it on every call iteration
+*** and so a run with the switch off is identical to one built before the switch existed.
+  p45_pfmPriceBoundR(ttot,all_regi)                "mode-2 cap exactly as the R side last delivered it, T$/GtC"
+  p45_pfmPriceBoundMktR(ttot,all_regi,all_emiMkt)  "per-market cap exactly as the R side last delivered it, T$/GtC"
+  p45_pfmBoundYr(ttot)                             "1 for the periods the R side builds the cap over (those with an anchor), the recursion domain"
+  p45_pfmCalledNow                                 "1 if the R side was called in THIS iteration's presolve"
+*** Per-iteration record of the rebuild, for debugging. Written by presolve and again by
+*** postsolve Step IV.4; where both run in an iteration, the postsolve entry (the cap the NEXT
+*** solve sees, after the budget loop rescaled the anchor) is what remains.
+  p45_pfmAnchorPath_iter(iteration,ttot)                   "full anchor path used by the rebuild, T$/GtC"
+  p45_pfmBoundLive_iter(iteration,ttot,all_regi)           "mode-2 cap as applied, T$/GtC"
+  p45_pfmBoundR_iter(iteration,ttot,all_regi)              "mode-2 cap as the R side last delivered it, T$/GtC"
+  p45_pfmBoundMktLive_iter(iteration,ttot,all_regi,all_emiMkt) "per-market cap as applied, T$/GtC"
+  p45_pfmBoundCheck_iter(iteration)          "call iterations only: max |rebuilt - R| / max R bound, t >= cm_startyear; ~1e-6 when the rebuild reproduces R"
+  p45_pfmBoundDrift_iter(iteration)          "max |applied - last R bound| / max R bound, t >= cm_startyear: how far the cap has followed the anchor since the last call"
+;
+
+*** Loop scalars of the mode-2 cap rebuild (presolve.gms and postsolve.gms Step IV.4)
+scalars
+s45_pfmBoundSeedYr   "first period of the cap recursion (the seed, where the increment is zero)"
+s45_pfmPrevYr        "previous period in the cap recursion"
+s45_pfmDelta         "increment of the cap over the reference price, T$/GtC"
+s45_pfmTarget        "political target increment phi * max(anchor - Pref, 0), T$/GtC"
+s45_pfmLam           "closure rate used in the recursion (0 when cm_pfmGapClosure = 0)"
+s45_pfmLamEff        "closure applied over one step, 1 - (1 - lambda)^dt, or 1"
 ;
 
 *** Scalars only used in functionForm/postsolve.gms

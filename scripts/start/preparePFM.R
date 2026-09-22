@@ -65,14 +65,25 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # A Run-Group is identified by selected-models-psm.yml, not by its name, so neither
   # layout needs the group spelled out anywhere unless there are several to choose from.
   marker <- "selected-models-psm.yml"
-  group <- gv("group", "PFM_GROUP", "")
+  # Precedence: the scenario row (cfg$pfmGroup, column `pfmGroup`) first, then PFM_GROUP,
+  # then cfg$pfm$group, then auto-detection. The row must win over the environment: in a
+  # config mixing v5, v5-specalt and v5-noinc rows, an environment variable left set in the
+  # shell would otherwise put EVERY row on one group, and nothing downstream could tell.
+  rowGroup <- as.character(cfg$pfmGroup %||% "")
+  if (length(rowGroup) != 1L || is.na(rowGroup)) rowGroup <- ""
+  group <- if (nzchar(rowGroup)) rowGroup else gv("group", "PFM_GROUP", "")
+  groupFrom <- if (nzchar(rowGroup)) "scenario config column pfmGroup" else
+    if (nzchar(Sys.getenv("PFM_GROUP", ""))) "environment variable PFM_GROUP" else
+    if (nzchar(group)) "cfg$pfm$group" else "auto-detection"
 
   if (nzchar(group)) {
     src <- file.path(sourceDir, group)
     if (!file.exists(file.path(src, marker))) {
-      stop("preparePFM: cfg$pfm$group = '", group, "' but no ", marker,
-           " at '", src, "'.")
+      stop("preparePFM: Run-Group '", group, "' (from ", groupFrom, ") but no ", marker,
+           " at '", src, "'. Export it with pfmRun(group = '", group,
+           "', stage = 'remind', remindDir = '", sourceDir, "').")
     }
+    say("Run-Group: ", group, " (from ", groupFrom, ")")
   } else if (file.exists(file.path(sourceDir, marker))) {
     src <- sourceDir
     group <- basename(normalizePath(sourceDir, mustWork = FALSE))
@@ -145,6 +156,7 @@ preparePFM <- function(cfg, verbose = TRUE) {
     "# All paths are RELATIVE to the run folder, which is the working directory when",
     "# GAMS calls Rscript. bindMode and theta come from pfm-coupling-runtime.yml.",
     paste0("group: ", group),
+    paste0("# group chosen by: ", groupFrom),
     "resultsDir: pfm",
     "modelDir: pfm",
     paste0("couplingMapping: ", rmap),

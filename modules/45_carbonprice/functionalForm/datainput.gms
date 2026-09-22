@@ -215,6 +215,10 @@ p45_pfmPhiMkt(regi,emiMkt) = 1;
 p45_pfmPriceBound(ttot,regi) = 0;
 p45_pfmBinds(ttot,regi) = 0;
 p45_pfmPriceBoundMkt(ttot,regi,emiMkt) = 0;
+p45_pfmPriceBoundR(ttot,regi) = 0;
+p45_pfmPriceBoundMktR(ttot,regi,emiMkt) = 0;
+p45_pfmBoundYr(ttot) = 0;
+p45_pfmCalledNow = 0;
 p45_pfmMPPriceMkt(ttot,regi,emiMkt) = 0;
 p45_pfmPriceMkt(ttot,regi,emiMkt) = 0;
 *** Each market's closure rate defaults to the economy-wide one, set just below from the

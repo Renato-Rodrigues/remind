@@ -452,6 +452,63 @@ if(cm_taxCO2_lowerBound_path_gdx_ref = 1,
 *** interpolation that every other cm_taxCO2_regiDiff mode gets.
 if(cm_taxCO2_regiDiff = 11,
 
+*** Rebuild the mode-2 cap from the anchor Parts III-IV have JUST rescaled (cm_pfmBoundRebuild = 1).
+*** >>> MIRRORS the rebuild block of presolve.gms (without its call-iteration check). This is the
+*** >>> place that decides the next solve: core/presolve.gms hands it the pm_taxCO2eq left here.
+  if((cm_pfmBindMode = 2) and (cm_pfmBoundRebuild = 1)
+     and (smax((ttot,regi), p45_pfmPriceBoundR(ttot,regi)) > 0),
+    p45_pfmBoundYr(ttot) = 1$(p45_taxCO2eq_anchor(ttot) > 0);
+    s45_pfmBoundSeedYr = smin(ttot$p45_pfmBoundYr(ttot), ttot.val);
+    loop(regi,
+      s45_pfmDelta = 0;
+      s45_pfmPrevYr = s45_pfmBoundSeedYr;
+      s45_pfmLam = p45_regiDiff_lambda(regi)$(cm_pfmGapClosure = 1);
+      loop(ttot$p45_pfmBoundYr(ttot),
+        s45_pfmTarget = p45_regiDiff_phi(regi)
+                      * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
+        if(ttot.val > s45_pfmBoundSeedYr,
+          s45_pfmLamEff = 1;
+          if((s45_pfmLam > 0) and (s45_pfmLam < 1),
+            s45_pfmLamEff = 1 - rPower(1 - s45_pfmLam, ttot.val - s45_pfmPrevYr);
+          );
+          s45_pfmDelta = s45_pfmDelta + s45_pfmLamEff * (s45_pfmTarget - s45_pfmDelta);
+        );
+        s45_pfmPrevYr = ttot.val;
+        p45_pfmPriceBound(ttot,regi) = min(p45_taxCO2eq_path_gdx_ref(ttot,regi) + s45_pfmDelta,
+                                           p45_taxCO2eq_anchor(ttot));
+      );
+    );
+    if(cm_pfmSectorMarkup = 1,
+      loop((regi,emiMkt),
+        s45_pfmDelta = 0;
+        s45_pfmPrevYr = s45_pfmBoundSeedYr;
+        s45_pfmLam = p45_pfmLambdaMkt(regi,emiMkt)$(cm_pfmGapClosure = 1);
+        loop(ttot$p45_pfmBoundYr(ttot),
+          s45_pfmTarget = p45_pfmPhiMkt(regi,emiMkt)
+                        * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
+          if(ttot.val > s45_pfmBoundSeedYr,
+            s45_pfmLamEff = 1;
+            if((s45_pfmLam > 0) and (s45_pfmLam < 1),
+              s45_pfmLamEff = 1 - rPower(1 - s45_pfmLam, ttot.val - s45_pfmPrevYr);
+            );
+            s45_pfmDelta = s45_pfmDelta + s45_pfmLamEff * (s45_pfmTarget - s45_pfmDelta);
+          );
+          s45_pfmPrevYr = ttot.val;
+          p45_pfmPriceBoundMkt(ttot,regi,emiMkt) = min(p45_taxCO2eq_path_gdx_ref(ttot,regi) + s45_pfmDelta,
+                                                       p45_taxCO2eq_anchor(ttot));
+        );
+      );
+    );
+*** the record: overwrites presolve's entry for this iteration with the cap the NEXT solve sees
+    p45_pfmAnchorPath_iter(iteration,ttot) = p45_taxCO2eq_anchor(ttot);
+    p45_pfmBoundLive_iter(iteration,ttot,regi) = p45_pfmPriceBound(ttot,regi);
+    p45_pfmBoundR_iter(iteration,ttot,regi) = p45_pfmPriceBoundR(ttot,regi);
+    p45_pfmBoundMktLive_iter(iteration,ttot,regi,emiMkt) = p45_pfmPriceBoundMkt(ttot,regi,emiMkt);
+    p45_pfmBoundDrift_iter(iteration) =
+      smax((t,regi)$(t.val ge cm_startyear), abs(p45_pfmPriceBound(t,regi) - p45_pfmPriceBoundR(t,regi)))
+      / max(1e-9, smax((t,regi)$(t.val ge cm_startyear), p45_pfmPriceBoundR(t,regi)));
+  );
+
   if(cm_pfmBindMode = 2,
     if(smax((t,regi)$(t.val ge cm_startyear), p45_pfmPriceBound(t,regi)) > 0,
       pm_taxCO2eq(t,regi)$(t.val ge cm_startyear) =

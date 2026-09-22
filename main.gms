@@ -1545,6 +1545,30 @@ parameter
   cm_pfmGapClosure   "0 = the political gap persists (lambda = 0), 1 = it closes at the frontier's estimated rates"
 ;
   cm_pfmGapClosure = 0;      !! def = 0  !! regexp = 0|1
+*** cm_pfmBoundRebuild  Rebuild the bind-mode-2 (LEVEL) cap from the CURRENT anchor every iteration?
+***                 0 = the cap is the absolute price the R side computed at its last call. The
+***                     coupling is not called after phi converges, so under a budget-forced run
+***                     (cm_iterative_target_adj > 0) the anchor keeps moving while the cap does
+***                     not: the budget loop then works against a frozen bound. This is how the
+***                     2026-09-16/18 v5 batch ran (analysis/ruleCBoundFreeze.R, SI S18).
+***                 1 = the cap is rebuilt in GAMS on every presolve and every postsolve from the
+***                     frozen phi (and lambda) and the anchor of that moment:
+***                       delta(t) = delta(t-1) + lamEff * (phi * max(A(t) - Pref(t), 0) - delta(t-1)),
+***                       delta(seed) = 0, lamEff = 1 - (1 - lambda)^dt (1 when lambda = 0),
+***                       bound(t) = min(Pref(t) + delta(t), A(t)),
+***                     with Pref = p45_taxCO2eq_path_gdx_ref and A = p45_taxCO2eq_anchor - the
+***                     formula of pfm::exportFeasibilityBound(), reproduced to 3.5e-7 on the v5
+***                     gdx (rule B and gap-closure runs). Same per market with p45_pfmPhiMkt.
+***                     Rule B is unaffected (its anchor does not move after the last call), and
+***                     bind modes 1 and 3 ignore the switch.
+***                 DEFAULT 0 so the published batch reproduces bit for bit; set 1 on rule-C rows.
+***                 Diagnostics per iteration: p45_pfmBoundLive_iter, p45_pfmBoundR_iter,
+***                 p45_pfmBoundMktLive_iter, p45_pfmAnchorPath_iter, p45_pfmBoundCheck_iter,
+***                 p45_pfmBoundDrift_iter (declarations.gms).
+parameter
+  cm_pfmBoundRebuild   "0 = mode-2 cap as last delivered by R, 1 = rebuilt in GAMS from phi and the current anchor every iteration"
+;
+  cm_pfmBoundRebuild = 0;      !! def = 0  !! regexp = 0|1
 
 *** cm_pfmAnchorFromGdx  Pin the global anchor to the one another run converged to.
 ***                 off = the anchor is built from cm_taxCO2_startyear / cm_peakBudgYr as usual.

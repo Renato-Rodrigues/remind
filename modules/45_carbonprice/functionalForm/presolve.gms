@@ -81,7 +81,9 @@ if(cm_taxCO2_regiDiff = 11,
 *** the rest of the run - phi is FROZEN at its converged value, never reset to 1.
 *** The R side reports "first call" as a huge delta, so the loop can never stop on
 *** the first PFM iteration.
+  p45_pfmCalledNow = 0;
   if((pfmIter(iteration)) and (pm_pfmConverged = 0),
+    p45_pfmCalledNow = 1;
 
 *** Track runtime, as EDGE-T does, so the coupling cost is visible in the log
     putclose runtime gyear(jnow):0:0 "-" gmonth(jnow):0:0 "-" gday(jnow):0:0 " " ghour(jnow):0:0 ":" gminute(jnow):0:0 ":" gsecond(jnow):0:0 ",iterativePFM," iteration.val:0;
@@ -176,6 +178,9 @@ if(cm_taxCO2_regiDiff = 11,
 *** The R side exports US$/tCO2; the anchor and pm_taxCO2eq are T$/GtC. Converting here once, so every later use is in model units.
       p45_pfmPriceBound(ttot,regi)$(p45_pfmPriceBound_aux(ttot,regi) > 0) =
         p45_pfmPriceBound_aux(ttot,regi) * sm_DptCO2_2_TDpGtC;
+*** Keep R's own bound, untouched by the rebuild below (cm_pfmBoundRebuild), for the check.
+      p45_pfmPriceBoundR(ttot,regi)$(p45_pfmPriceBound_aux(ttot,regi) > 0) =
+        p45_pfmPriceBound_aux(ttot,regi) * sm_DptCO2_2_TDpGtC;
     );
 
 *** Mode 3 carries its own price path rather than a share. Same "> 0" guard: a failed
@@ -226,6 +231,8 @@ if(cm_taxCO2_regiDiff = 11,
         if(p45_pfmFresh = 1,
           p45_pfmPriceBoundMkt(ttot,regi,emiMkt) =
             p45_pfmPriceBoundMkt_aux(ttot,regi,emiMkt) * sm_DptCO2_2_TDpGtC;
+          p45_pfmPriceBoundMktR(ttot,regi,emiMkt) =
+            p45_pfmPriceBoundMkt_aux(ttot,regi,emiMkt) * sm_DptCO2_2_TDpGtC;
         );
       );
       if(cm_pfmBindMode = 3,
@@ -267,6 +274,87 @@ if(cm_taxCO2_regiDiff = 11,
       );
     );
     display p45_regiDiff_phi, p45_pfmDelta, pm_pfmConverged, p45_pfmCallCount;
+  );
+
+*** --- rebuild the mode-2 cap from the CURRENT anchor (cm_pfmBoundRebuild = 1) -----
+*** >>> MIRRORED in postsolve.gms Step IV.4. Change one, change the other.
+***
+*** Why. The R side ships the cap as an ABSOLUTE price, P_ref + phi (A - P_ref), evaluated at the
+*** anchor A of its call, and it is not called again once phi has converged. Under a
+*** budget-forced run the anchor keeps moving, so the cap stopped following the formula it is
+*** defined by: in the v5 rule-C runs the anchor ended 0.72-0.85x its value at the last call, and
+*** at theta = 0.325 it doubled against a flat cap and the budget loop stalled (SI S18).
+***
+*** What. The same recursion as pfm::exportFeasibilityBound(), in GAMS, from the frozen phi and
+*** lambda and the anchor of THIS moment; it reproduces the R bound to 3.5e-7 on the v5 gdx.
+*** lambda is the closure rate only when cm_pfmGapClosure = 1, exactly as on the R side
+*** (lambdaGap), because the loaded rate may be a stale seed value when the gap persists.
+***
+*** Check. On an iteration that called R, the anchor here is the one R read from fulldata.gdx,
+*** so the rebuild must equal R's bound: p45_pfmBoundCheck_iter records the gap. It is NOT an
+*** abort: fulldata.gdx is written only after an optimal iteration, so after a non-optimal one R
+*** reads an older anchor than GAMS holds - and there the rebuild is the more correct of the two.
+  if((cm_taxCO2_regiDiff = 11) and (cm_pfmBindMode = 2) and (cm_pfmBoundRebuild = 1)
+     and (smax((ttot,regi), p45_pfmPriceBoundR(ttot,regi)) > 0),
+    p45_pfmBoundYr(ttot) = 1$(p45_taxCO2eq_anchor(ttot) > 0);
+    s45_pfmBoundSeedYr = smin(ttot$p45_pfmBoundYr(ttot), ttot.val);
+    loop(regi,
+      s45_pfmDelta = 0;
+      s45_pfmPrevYr = s45_pfmBoundSeedYr;
+      s45_pfmLam = p45_regiDiff_lambda(regi)$(cm_pfmGapClosure = 1);
+      loop(ttot$p45_pfmBoundYr(ttot),
+        s45_pfmTarget = p45_regiDiff_phi(regi)
+                      * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
+        if(ttot.val > s45_pfmBoundSeedYr,
+          s45_pfmLamEff = 1;
+          if((s45_pfmLam > 0) and (s45_pfmLam < 1),
+            s45_pfmLamEff = 1 - rPower(1 - s45_pfmLam, ttot.val - s45_pfmPrevYr);
+          );
+          s45_pfmDelta = s45_pfmDelta + s45_pfmLamEff * (s45_pfmTarget - s45_pfmDelta);
+        );
+        s45_pfmPrevYr = ttot.val;
+        p45_pfmPriceBound(ttot,regi) = min(p45_taxCO2eq_path_gdx_ref(ttot,regi) + s45_pfmDelta,
+                                           p45_taxCO2eq_anchor(ttot));
+      );
+    );
+    if(cm_pfmSectorMarkup = 1,
+      loop((regi,emiMkt),
+        s45_pfmDelta = 0;
+        s45_pfmPrevYr = s45_pfmBoundSeedYr;
+        s45_pfmLam = p45_pfmLambdaMkt(regi,emiMkt)$(cm_pfmGapClosure = 1);
+        loop(ttot$p45_pfmBoundYr(ttot),
+          s45_pfmTarget = p45_pfmPhiMkt(regi,emiMkt)
+                        * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
+          if(ttot.val > s45_pfmBoundSeedYr,
+            s45_pfmLamEff = 1;
+            if((s45_pfmLam > 0) and (s45_pfmLam < 1),
+              s45_pfmLamEff = 1 - rPower(1 - s45_pfmLam, ttot.val - s45_pfmPrevYr);
+            );
+            s45_pfmDelta = s45_pfmDelta + s45_pfmLamEff * (s45_pfmTarget - s45_pfmDelta);
+          );
+          s45_pfmPrevYr = ttot.val;
+          p45_pfmPriceBoundMkt(ttot,regi,emiMkt) = min(p45_taxCO2eq_path_gdx_ref(ttot,regi) + s45_pfmDelta,
+                                                       p45_taxCO2eq_anchor(ttot));
+        );
+      );
+    );
+*** the check, on call iterations only
+    if((p45_pfmCalledNow = 1) and (p45_pfmFresh = 1),
+      p45_pfmBoundCheck_iter(iteration) =
+        smax((t,regi)$(t.val ge cm_startyear), abs(p45_pfmPriceBound(t,regi) - p45_pfmPriceBoundR(t,regi)))
+        / max(1e-9, smax((t,regi)$(t.val ge cm_startyear), p45_pfmPriceBoundR(t,regi)));
+      if(p45_pfmBoundCheck_iter(iteration) > 1e-4,
+        display "45_carbonprice: WARNING - the rebuilt mode-2 cap differs from the R bound on a call iteration (see p45_pfmBoundCheck_iter). Expected only after a non-optimal iteration, when R reads an older anchor.";
+      );
+    );
+*** the record
+    p45_pfmAnchorPath_iter(iteration,ttot) = p45_taxCO2eq_anchor(ttot);
+    p45_pfmBoundLive_iter(iteration,ttot,regi) = p45_pfmPriceBound(ttot,regi);
+    p45_pfmBoundR_iter(iteration,ttot,regi) = p45_pfmPriceBoundR(ttot,regi);
+    p45_pfmBoundMktLive_iter(iteration,ttot,regi,emiMkt) = p45_pfmPriceBoundMkt(ttot,regi,emiMkt);
+    p45_pfmBoundDrift_iter(iteration) =
+      smax((t,regi)$(t.val ge cm_startyear), abs(p45_pfmPriceBound(t,regi) - p45_pfmPriceBoundR(t,regi)))
+      / max(1e-9, smax((t,regi)$(t.val ge cm_startyear), p45_pfmPriceBoundR(t,regi)));
   );
 
 *** --- apply phi, EVERY iteration ---------------------------------------------
