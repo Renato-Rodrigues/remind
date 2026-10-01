@@ -25,7 +25,7 @@ preparePFM <- function(cfg, verbose = TRUE) {
     if (!is.null(p[[field]]) && nzchar(as.character(p[[field]]))) return(p[[field]])
     default
   }
-  sourceDir <- gv("source", "PFM_SOURCE", "../pfm-data")
+  sourceDir <- gv("source", "PFM_SOURCE", "../../output/remind-inputs")
 
   # --- settings DERIVED from the REMIND run, not restated -----------------------
   # Anything REMIND already knows is taken from REMIND. A second place to write the
@@ -52,7 +52,7 @@ preparePFM <- function(cfg, verbose = TRUE) {
 
   dest <- file.path(cfg$results_folder, "pfm")
 
-  # Which Run-Group? Normally there is exactly one prepared in pfm-data, so asking
+  # Which Run-Group? Normally there is exactly one prepared in output/remind-inputs, so asking
   # the user to name it again is asking them to repeat a decision already made when
   # the folder was assembled - and to keep it in sync forever after. Auto-detect, and
   # only demand an answer when the folder is genuinely ambiguous.
@@ -60,7 +60,7 @@ preparePFM <- function(cfg, verbose = TRUE) {
       "' (cfg$pfm$source = '", sourceDir, "', wd = '", getwd(), "')")
 
   # Where the Run-Group lives. Two layouts, in order of preference:
-  #   1. <source>/            - the files sitting directly in pfm-data (simplest)
+  #   1. <source>/            - the files sitting directly in output/remind-inputs (simplest)
   #   2. <source>/<group>/    - one or more Run-Group directories side by side
   # A Run-Group is identified by selected-models-psm.yml, not by its name, so neither
   # layout needs the group spelled out anywhere unless there are several to choose from.
