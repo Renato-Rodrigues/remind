@@ -124,6 +124,17 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # misleading possible state to leave a run folder in.
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
   file.copy(file.path(src, need), file.path(dest, need), overwrite = TRUE)
+  # Optional test instrument (GP-23, GP-24): a Run-Group may carry phi-override.yml, which
+  # pfm::iterativePFM() (pfm >= 0.4.1) applies to the regional shares on every call. Copied
+  # when present and announced, because a run with overridden shares must never be mistaken
+  # for a deployed one. A stale override from a reused run folder is removed.
+  ovSrc <- file.path(src, "phi-override.yml")
+  if (file.exists(ovSrc)) {
+    file.copy(ovSrc, file.path(dest, "phi-override.yml"), overwrite = TRUE)
+    say("PHI OVERRIDE in this Run-Group: ", paste(readLines(ovSrc, warn = FALSE), collapse = " | "))
+  } else if (file.exists(file.path(dest, "phi-override.yml"))) {
+    file.remove(file.path(dest, "phi-override.yml"))
+  }
 
   # The panel the deployed spec was fitted on, addressed by the hash in the manifest.
   mf <- jsonlite::read_json(file.path(dest, "manifest.json"))
