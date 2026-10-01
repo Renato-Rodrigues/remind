@@ -159,6 +159,23 @@ preparePFM <- function(cfg, verbose = TRUE) {
   dir.create(file.path(dest, "panels"), showWarnings = FALSE)
   file.copy(panelSrc, file.path(dest, "panels", panel), overwrite = TRUE)
 
+  # The coupling's madrat cache files, staged with the Run-Group by pfm's REMIND export from
+  # the project's prepared cache (pfm::pfmPrepareCache). With them the coupling reads the data
+  # versions the Run-Group was prepared with; without them it falls back to madrat's own cache,
+  # which is what the v5 runs did - and why they read other calcFE/calcPE versions than the
+  # v5 estimation.
+  mcSrc <- file.path(src, "madrat-cache")
+  mcDest <- file.path(dest, "madrat-cache")
+  unlink(mcDest, recursive = TRUE)
+  if (dir.exists(mcSrc)) {
+    dir.create(mcDest)
+    mcFiles <- list.files(mcSrc)
+    file.copy(file.path(mcSrc, mcFiles), file.path(mcDest, mcFiles), copy.date = TRUE)
+    say("madrat cache: ", sum(grepl("[.]rds$", mcFiles)), " staged files (pfm/madrat-cache)")
+  } else {
+    say("madrat cache: none staged with the Run-Group - the coupling reads madrat's own cache")
+  }
+
   # Static settings, RELATIVE to the run folder. bindMode and theta are deliberately
   # absent: presolve.gms writes them to pfm-coupling-runtime.yml from the scenario
   # config, so there is exactly one place they are set.
@@ -177,6 +194,7 @@ preparePFM <- function(cfg, verbose = TRUE) {
     # aggregation weights. Kept NEAR-TERM on purpose - see default.cfg.
     paste0("weightYear: ", gv("weightYear", "PFM_WEIGHT_YEAR", 2025))
   )
+  if (dir.exists(mcDest)) cfgLines <- c(cfgLines, "cachefolder: pfm/madrat-cache")
   # Declared, NOT tested for existence. REMIND copies input_ref.gdx into the run folder
   # AFTER this script runs, so a file.exists() check here is always false and the entry
   # was never written - which made bind modes 2 and 3 refuse at iteration 15 even though
