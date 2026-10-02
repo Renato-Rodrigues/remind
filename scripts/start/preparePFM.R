@@ -62,9 +62,14 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # Where the Run-Group lives. Two layouts, in order of preference:
   #   1. <source>/            - the files sitting directly in output/remind-inputs (simplest)
   #   2. <source>/<group>/    - one or more Run-Group directories side by side
-  # A Run-Group is identified by selected-models-psm.yml, not by its name, so neither
-  # layout needs the group spelled out anywhere unless there are several to choose from.
-  marker <- "selected-models-psm.yml"
+  # A Run-Group is identified by its spec file, not by its name, so neither layout needs
+  # the group spelled out anywhere unless there are several to choose from. The file was
+  # selected-models-psm.yml until the psm -> pfm rename (2026-10-02); Run-Groups exported
+  # before it (v5 and earlier) carry that name, so both are accepted.
+  markers <- c("selected-models-pfm.yml", "selected-models-psm.yml")
+  marker <- paste(markers, collapse = "' or '")
+  hasMarker <- function(d) any(file.exists(file.path(d, markers)))
+  markerIn <- function(d) markers[file.exists(file.path(d, markers))][1]
   # Precedence: the scenario row (cfg$pfmGroup, column `pfmGroup`) first, then PFM_GROUP,
   # then cfg$pfm$group, then auto-detection. The row must win over the environment: in a
   # config mixing v5, v5-specalt and v5-noinc rows, an environment variable left set in the
@@ -78,20 +83,20 @@ preparePFM <- function(cfg, verbose = TRUE) {
 
   if (nzchar(group)) {
     src <- file.path(sourceDir, group)
-    if (!file.exists(file.path(src, marker))) {
-      stop("preparePFM: Run-Group '", group, "' (from ", groupFrom, ") but no ", marker,
+    if (!hasMarker(src)) {
+      stop("preparePFM: Run-Group '", group, "' (from ", groupFrom, ") but no '", marker, "'",
            " at '", src, "'. Export it with pfmRun(group = '", group,
            "', stage = 'remind', remindDir = '", sourceDir, "').")
     }
     say("Run-Group: ", group, " (from ", groupFrom, ")")
-  } else if (file.exists(file.path(sourceDir, marker))) {
+  } else if (hasMarker(sourceDir)) {
     src <- sourceDir
     group <- basename(normalizePath(sourceDir, mustWork = FALSE))
     say("layout: files directly in the source folder")
   } else {
     cand <- list.dirs(sourceDir, full.names = FALSE, recursive = FALSE)
     cand <- cand[vapply(cand, function(g)
-      file.exists(file.path(sourceDir, g, marker)), logical(1))]
+      hasMarker(file.path(sourceDir, g)), logical(1))]
     if (length(cand) == 1L) {
       group <- cand
       src <- file.path(sourceDir, group)
@@ -109,13 +114,13 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # Only what iterativePFM() actually reads. Copying the whole Run-Group would drag in
   # sweep.rds and the projection fan-out - hundreds of MB of things the coupling never
   # opens - into every run folder.
-  need <- c("selected-models-psm.yml", "manifest.json", "frontier.rds",
+  need <- c(markerIn(src), "manifest.json", "frontier.rds",
             "temporal-validation.rds",
             "donor-assignment-band-Bulk.rds", "donor-assignment-band-Diffuse.rds")
   missing <- need[!file.exists(file.path(src, need))]
   if (length(missing)) {
     stop("preparePFM: the Run-Group is missing ", paste(missing, collapse = ", "),
-         ". The band assignments come from the pfm psm-donor step ",
+         ". The band assignments come from the pfm pfm-donor step ",
          "(pfmRun(group = <group>, stage = 'downstream')); without ",
          "them the coupling refuses to run rather than reverting to phi = 1.")
   }
