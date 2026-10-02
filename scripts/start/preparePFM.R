@@ -36,6 +36,13 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # weights must be projected under the SAME one or they describe a different world.
   ssp <- as.character(cfg$gms$cm_GDPpopScen %||% "")
   ssp <- if (nzchar(ssp)) sub("^gdp_", "", ssp) else gv("ssp", "PFM_SSP", "SSP2")
+  # Institution-projection rule (cfg$pfmInstitutions, scenario column `pfmInstitutions`).
+  institutions <- as.character(cfg$pfmInstitutions %||% "")
+  if (!nzchar(institutions)) institutions <- "storyline"
+  if (!institutions %in% c("storyline", "convergence", "hold")) {
+    stop("preparePFM: cfg$pfmInstitutions must be storyline, convergence or hold, got '",
+         institutions, "'")
+  }
   #
   # Region mapping: the run's own, so the coupling can never deliver at a different
   # resolution than the model solves at.
@@ -197,7 +204,10 @@ preparePFM <- function(cfg, verbose = TRUE) {
     paste0("weightScenario: ", ssp),
     # weightYear: the year whose country-size distribution sets the within-region
     # aggregation weights. Kept NEAR-TERM on purpose - see default.cfg.
-    paste0("weightYear: ", gv("weightYear", "PFM_WEIGHT_YEAR", 2025))
+    paste0("weightYear: ", gv("weightYear", "PFM_WEIGHT_YEAR", 2025)),
+    # institutions: the projection rule for institution series without an SSP projection
+    # (cfg$pfmInstitutions, column `pfmInstitutions`); pfm::pfmInstitutionProjection().
+    paste0("institutions: ", institutions)
   )
   if (dir.exists(mcDest)) cfgLines <- c(cfgLines, "cachefolder: pfm/madrat-cache")
   # Declared, NOT tested for existence. REMIND copies input_ref.gdx into the run folder
