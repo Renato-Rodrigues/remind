@@ -89,3 +89,5 @@ cm_DevPriceAnticip_tolFactor,input,not needed
 cm_taxCO2_regiDiff,switch,PFM coupling criterion - nash only
 pm_pfmConverged,parameter,PFM coupling criterion - nash only
 pm_pfmInfesCode,parameter,PFM coupling criterion - nash only
+pm_NDCTargetNotReached_iter,input,unique to NDC
+pm_CO2PriceLimit,input,not used outside of NDC
