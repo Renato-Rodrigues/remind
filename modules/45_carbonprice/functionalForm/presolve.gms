@@ -692,21 +692,9 @@ if(cm_taxCO2_regiDiff = 11,
     );
   );
 
-*** (5b) Peak budget (pfm design note 0005 E11, PITFALLS 26). The warning above compares the budget
-*** deviation, which does not see cumulative CO2 that keeps rising after the target year. A PEAK
-*** budget is met on the peak, so a run whose cumulative CO2 has its maximum at the last period
-*** never peaked, whatever the deviation says. Recorded every iteration; said at the cap.
-  p45_pfmBudgetPeak_iter(iteration) = smax(ttot$(pm_actualbudgetco2(ttot) ne 0), pm_actualbudgetco2(ttot));
-  p45_pfmBudgetPeakYr_iter(iteration) =
-    smax(ttot$((pm_actualbudgetco2(ttot) ne 0) and (pm_actualbudgetco2(ttot) >= p45_pfmBudgetPeak_iter(iteration) - 1e-6)), ttot.val);
-  p45_pfmBudgetNoPeak_iter(iteration) =
-    1$((p45_pfmBudgetPeak_iter(iteration) > 0) and
-       (p45_pfmBudgetPeakYr_iter(iteration) >= smax(ttot$(pm_actualbudgetco2(ttot) ne 0), ttot.val)));
-  if((ord(iteration) >= cm_iteration_max) and (cm_iterative_target_adj > 0)
-     and (p45_pfmBudgetNoPeak_iter(iteration) = 1),
-    display "PFM PEAK-BUDGET WARNING - cumulative CO2 is still rising at the last period: the peak budget was NOT met, whatever pm_pfmBudgetWarn says. See p45_pfmBudgetPeak_iter / p45_pfmBudgetPeakYr_iter.";
-    display p45_pfmBudgetPeak_iter, p45_pfmBudgetPeakYr_iter;
-  );
+*** (5b) The peak-budget record (pfm design note 0005 E11) is in postsolve.gms: it reads
+*** pm_actualbudgetco2, which core/postsolve.gms assigns AFTER this file in compile order (GAMS
+*** error 141 here, 2026-10-07).
 
   if(pm_pfmInfesCode > 0,
     p45_pfmInfesCount = p45_pfmInfesCount + 1;
