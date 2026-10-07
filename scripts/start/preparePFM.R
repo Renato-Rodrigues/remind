@@ -220,6 +220,17 @@ preparePFM <- function(cfg, verbose = TRUE) {
     # (cfg$pfmInstitutions, column `pfmInstitutions`); pfm::pfmInstitutionProjection().
     paste0("institutions: ", institutions)
   )
+  # The v6 coupling's options (pfm design note 0005 F8; pfm::pfmV6CouplingDefaults), from the scenario
+  # row's columns pfmFormulation, pfmPhiHoldYear, pfmPhiHold, pfmPhiSpread, pfmPhiOrdering,
+  # pfmPhiOrderingSeed, pfmPhiKappa, pfmPhiStrength. Written only when set, so every existing row
+  # keeps the headline values; pfm validates them and echoes them in the log.
+  v6cols <- c(formulation = "pfmFormulation", phiHoldYear = "pfmPhiHoldYear", phiHold = "pfmPhiHold",
+              phiSpread = "pfmPhiSpread", phiOrdering = "pfmPhiOrdering", phiOrderingSeed = "pfmPhiOrderingSeed",
+              phiKappa = "pfmPhiKappa", phiStrength = "pfmPhiStrength")
+  for (k in names(v6cols)) {
+    v <- as.character(cfg[[v6cols[[k]]]] %||% "")
+    if (length(v) == 1 && nzchar(v) && !is.na(v)) cfgLines <- c(cfgLines, paste0(k, ": ", v))
+  }
   if (dir.exists(mcDest)) cfgLines <- c(cfgLines, "cachefolder: pfm/madrat-cache")
   # Declared, NOT tested for existence. REMIND copies input_ref.gdx into the run folder
   # AFTER this script runs, so a file.exists() check here is always false and the entry

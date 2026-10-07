@@ -111,6 +111,11 @@ if(cm_taxCO2_regiDiff = 11,
 *** exactly 0, for the whole run. Handing the start year over lets the R side place its
 *** tier year where the pathway can actually move.
     put "startYear: ", cm_startyear:0:0 /;
+*** The run's own SSP (pfm design note 0005 D9): the R side stops if it differs from the SSP its
+*** scenario panel and weights were configured for (pfm-coupling.yml weightScenario).
+    put "ssp: %cm_GDPpopScen%" /;
+*** Whether this run reads the share path. A v6 Run-Group told 0 stops on the R side.
+    put "phiPath: ", cm_pfmPhiPath:0:0 /;
     putclose pfmcfg;
 
     Execute "Rscript -e 'library(pfm); pfm::iterativePFM()'";
@@ -133,6 +138,29 @@ if(cm_taxCO2_regiDiff = 11,
     Execute_Loadpoint 'p45_regiDiff_phi' p45_regiDiff_phi_aux = p45_regiDiff_phi;
     p45_regiDiff_phi(regi)$(p45_regiDiff_phi_aux(regi) > 0) = p45_regiDiff_phi_aux(regi);
     p45_pfmCallCount = p45_pfmCallCount + 1;
+
+*** The v6 share PATH (cm_pfmPhiPath = 1). Gated on the freshness stamp and on the symbol being
+*** present (some record > 0): a share of exactly 0 is a legal, flagged value on the R side, so a
+*** per-element "> 0" would read a maximally constrained region as unconstrained. A fresh gdx
+*** without the path means the Run-Group is not v6: the path keeps its previous value (1, uncoupled,
+*** before the first call) and it is said out loud.
+    if(cm_pfmPhiPath = 1,
+      p45_pfmPhiPath_aux(ttot,regi) = 0;
+      Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmPhiPath_aux = p45_pfmPhiPath;
+      if((p45_pfmFresh = 1) and (smax((ttot,regi), p45_pfmPhiPath_aux(ttot,regi)) > 0),
+        p45_pfmPhiPath(ttot,regi) = p45_pfmPhiPath_aux(ttot,regi);
+      else
+        display "45_carbonprice: cm_pfmPhiPath = 1 but no fresh p45_pfmPhiPath was delivered - is the Run-Group a v6 group (phi-anchor.rds)? Keeping the previous path.";
+      );
+      if(cm_pfmSectorMarkup = 1,
+        p45_pfmPhiMktPath_aux(ttot,regi,emiMkt) = 0;
+        Execute_Loadpoint 'p45_regiDiff_phi' p45_pfmPhiMktPath_aux = p45_pfmPhiMktPath;
+        if((p45_pfmFresh = 1) and (smax((ttot,regi,emiMkt), p45_pfmPhiMktPath_aux(ttot,regi,emiMkt)) > 0),
+          p45_pfmPhiMktPath(ttot,regi,emiMkt) = p45_pfmPhiMktPath_aux(ttot,regi,emiMkt);
+        );
+      );
+      display p45_pfmPhiPath;
+    );
 
 *** The ECONOMY-WIDE closure rate, which the "apply phi" block below builds the mode-1
 *** FLOOR from. Loaded here for the same reason p45_pfmLambdaMkt is: it is a property of
@@ -303,7 +331,8 @@ if(cm_taxCO2_regiDiff = 11,
       s45_pfmPrevYr = s45_pfmBoundSeedYr;
       s45_pfmLam = p45_regiDiff_lambda(regi)$(cm_pfmGapClosure = 1);
       loop(ttot$p45_pfmBoundYr(ttot),
-        s45_pfmTarget = p45_regiDiff_phi(regi)
+*** v6 (cm_pfmPhiPath = 1): the share of THIS period, from the path; v5: the one share.
+        s45_pfmTarget = (p45_pfmPhiPath(ttot,regi)$(cm_pfmPhiPath = 1) + p45_regiDiff_phi(regi)$(cm_pfmPhiPath = 0))
                       * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
         if(ttot.val > s45_pfmBoundSeedYr,
           s45_pfmLamEff = 1;
@@ -323,7 +352,7 @@ if(cm_taxCO2_regiDiff = 11,
         s45_pfmPrevYr = s45_pfmBoundSeedYr;
         s45_pfmLam = p45_pfmLambdaMkt(regi,emiMkt)$(cm_pfmGapClosure = 1);
         loop(ttot$p45_pfmBoundYr(ttot),
-          s45_pfmTarget = p45_pfmPhiMkt(regi,emiMkt)
+          s45_pfmTarget = (p45_pfmPhiMktPath(ttot,regi,emiMkt)$(cm_pfmPhiPath = 1) + p45_pfmPhiMkt(regi,emiMkt)$(cm_pfmPhiPath = 0))
                         * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
           if(ttot.val > s45_pfmBoundSeedYr,
             s45_pfmLamEff = 1;
@@ -362,10 +391,16 @@ if(cm_taxCO2_regiDiff = 11,
 *** p45_taxCO2eq_anchor, so the differentiated trajectory has to be rebuilt from the
 *** current anchor even on iterations where phi was not recomputed. Leaving this
 *** inside the guard would let pm_taxCO2eq go stale between coupling calls.
+  if(cm_pfmPhiPath = 1,
+*** v6: the ratio IS the share path; no closure rate (lambda is 0 in v6, ADR 0050).
+*** >>> MIRRORED in postsolve.gms Step III.3. Change one, change the other.
+    p45_regiDiff_ratio(t,regi) = p45_pfmPhiPath(t,regi);
+  else
   p45_regiDiff_ratio(t,regi)$(t.val lt p45_regiDiff_startYr(regi)) = p45_regiDiff_phi(regi);
   p45_regiDiff_ratio(t,regi)$(t.val ge p45_regiDiff_startYr(regi)) =
     1 - (1 - p45_regiDiff_phi(regi))
         * rPower(1 - p45_regiDiff_lambda(regi), t.val - p45_regiDiff_startYr(regi));
+  );
 
   p45_taxCO2eq_regiDiff(t,regi) = p45_regiDiff_ratio(t,regi) * p45_taxCO2eq_anchor(t);
 
@@ -492,7 +527,11 @@ if(cm_taxCO2_regiDiff = 11,
 *** rather than the sector difference it is defined as, and the binding sector - whose markup
 *** must be exactly zero - carried a large one. The two rates must come from the same fit and
 *** the same reconciliation rule, or the markup stops being a markup. SCENARIOS.md 1.1a.
-    if(cm_pfmBindMode = 1,
+    if((cm_pfmBindMode = 1) and (cm_pfmPhiPath = 1),
+*** v6: each market's own share path, no closure rate.
+      p45_pfmPriceMkt(t,regi,emiMkt)$(t.val ge cm_startyear) =
+        p45_pfmPhiMktPath(t,regi,emiMkt) * p45_taxCO2eq_anchor(t);
+    elseif cm_pfmBindMode = 1,
       p45_pfmPriceMkt(t,regi,emiMkt)$(t.val ge cm_startyear) =
         ( 1 - (1 - p45_pfmPhiMkt(regi,emiMkt))
               * rPower(1 - p45_pfmLambdaMkt(regi,emiMkt), t.val - p45_regiDiff_startYr(regi)) )
@@ -653,6 +692,22 @@ if(cm_taxCO2_regiDiff = 11,
     );
   );
 
+*** (5b) Peak budget (pfm design note 0005 E11, PITFALLS 26). The warning above compares the budget
+*** deviation, which does not see cumulative CO2 that keeps rising after the target year. A PEAK
+*** budget is met on the peak, so a run whose cumulative CO2 has its maximum at the last period
+*** never peaked, whatever the deviation says. Recorded every iteration; said at the cap.
+  p45_pfmBudgetPeak_iter(iteration) = smax(ttot$(pm_actualbudgetco2(ttot) ne 0), pm_actualbudgetco2(ttot));
+  p45_pfmBudgetPeakYr_iter(iteration) =
+    smax(ttot$((pm_actualbudgetco2(ttot) ne 0) and (pm_actualbudgetco2(ttot) >= p45_pfmBudgetPeak_iter(iteration) - 1e-6)), ttot.val);
+  p45_pfmBudgetNoPeak_iter(iteration) =
+    1$((p45_pfmBudgetPeak_iter(iteration) > 0) and
+       (p45_pfmBudgetPeakYr_iter(iteration) >= smax(ttot$(pm_actualbudgetco2(ttot) ne 0), ttot.val)));
+  if((ord(iteration) >= cm_iteration_max) and (cm_iterative_target_adj > 0)
+     and (p45_pfmBudgetNoPeak_iter(iteration) = 1),
+    display "PFM PEAK-BUDGET WARNING - cumulative CO2 is still rising at the last period: the peak budget was NOT met, whatever pm_pfmBudgetWarn says. See p45_pfmBudgetPeak_iter / p45_pfmBudgetPeakYr_iter.";
+    display p45_pfmBudgetPeak_iter, p45_pfmBudgetPeakYr_iter;
+  );
+
   if(pm_pfmInfesCode > 0,
     p45_pfmInfesCount = p45_pfmInfesCount + 1;
   else
@@ -671,6 +726,9 @@ if(cm_taxCO2_regiDiff = 11,
 *** between PFM calls as well as at them - that is where the budget iteration moves
 *** the anchor while phi is held fixed.
   p45_pfmPhi_iter(iteration,regi) = p45_regiDiff_phi(regi);
+  if(cm_pfmPhiPath = 1,
+    p45_pfmPhiPath_iter(iteration,ttot,regi) = p45_pfmPhiPath(ttot,regi);
+  );
   p45_pfmDelta_iter(iteration) = p45_pfmDelta;
   p45_pfmMaxPrice_iter(iteration) = p45_pfmMaxPrice;
   p45_pfmInfes_iter(iteration) = pm_pfmInfesCode;
@@ -685,6 +743,13 @@ if(cm_taxCO2_regiDiff = 11,
       / max(1, sum(t$(t.val ge cm_startyear), 1));
     p45_pfmBindShare_iter(iteration) =
       sum((t,regi)$(t.val ge cm_startyear), p45_pfmBinds(t,regi))
+      / max(1, sum((t,regi)$(t.val ge cm_startyear), 1));
+  );
+*** Mode 1 (pfm design note 0005 E12): the share of region-periods whose price the ratio holds below
+*** the anchor - the mode-1 analogue of the mode-2 bind share, so rule B's ratio runs report it too.
+  if(cm_pfmBindMode = 1,
+    p45_pfmBindShare_iter(iteration) =
+      sum((t,regi)$(t.val ge cm_startyear), 1$(p45_regiDiff_ratio(t,regi) < 1 - 1e-6))
       / max(1, sum((t,regi)$(t.val ge cm_startyear), 1));
   );
 );

@@ -212,6 +212,13 @@ p45_regiDiff_lambda(regi) = 0;
 *** export yields a ZERO markup in every market - i.e. the pre-ADR-0042 min() behaviour -
 *** rather than an invented differentiation.
 p45_pfmPhiMkt(regi,emiMkt) = 1;
+*** The v6 share path (cm_pfmPhiPath = 1) defaults to uncoupled for the same reason.
+p45_pfmPhiPath(ttot,regi) = 1;
+p45_pfmPhiMktPath(ttot,regi,emiMkt) = 1;
+p45_pfmPhiPath_iter(iteration,ttot,regi) = 0;
+p45_pfmBudgetPeak_iter(iteration) = 0;
+p45_pfmBudgetPeakYr_iter(iteration) = 0;
+p45_pfmBudgetNoPeak_iter(iteration) = 0;
 p45_pfmPriceBound(ttot,regi) = 0;
 p45_pfmBinds(ttot,regi) = 0;
 p45_pfmPriceBoundMkt(ttot,regi,emiMkt) = 0;

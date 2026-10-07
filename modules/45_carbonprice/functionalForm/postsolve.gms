@@ -381,10 +381,15 @@ elseif cm_taxCO2_regiDiff = 11, !! feasibility (PFM coupling)
   !! then solved on the uniform anchor: SSP2-PkBudg1000-PFMratio and -PFMlevelC came
   !! out bit-identical to the theta = 0 gate while reporting phi in [0.21, 0.79].
   !! The sibling Step III.1 above already carries the same branch.
+  if(cm_pfmPhiPath = 1,
+*** v6: the ratio IS the share path (MIRRORS presolve.gms "apply phi").
+    p45_regiDiff_ratio(t,regi) = p45_pfmPhiPath(t,regi);
+  else
   p45_regiDiff_ratio(t,regi)$(t.val lt p45_regiDiff_startYr(regi)) = p45_regiDiff_phi(regi);
   p45_regiDiff_ratio(t,regi)$(t.val ge p45_regiDiff_startYr(regi)) =
     1 - (1 - p45_regiDiff_phi(regi))
         * rPower(1 - p45_regiDiff_lambda(regi), t.val - p45_regiDiff_startYr(regi));
+  );
 else
   !! Set convergence factor equal to p45_regiDiff_initialRatio before p45_regiDiff_startYr:
   p45_regiDiff_ratio(t,regi)$(t.val lt p45_regiDiff_startYr(regi)) = p45_regiDiff_initialRatio(regi);
@@ -464,7 +469,7 @@ if(cm_taxCO2_regiDiff = 11,
       s45_pfmPrevYr = s45_pfmBoundSeedYr;
       s45_pfmLam = p45_regiDiff_lambda(regi)$(cm_pfmGapClosure = 1);
       loop(ttot$p45_pfmBoundYr(ttot),
-        s45_pfmTarget = p45_regiDiff_phi(regi)
+        s45_pfmTarget = (p45_pfmPhiPath(ttot,regi)$(cm_pfmPhiPath = 1) + p45_regiDiff_phi(regi)$(cm_pfmPhiPath = 0))
                       * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
         if(ttot.val > s45_pfmBoundSeedYr,
           s45_pfmLamEff = 1;
@@ -484,7 +489,7 @@ if(cm_taxCO2_regiDiff = 11,
         s45_pfmPrevYr = s45_pfmBoundSeedYr;
         s45_pfmLam = p45_pfmLambdaMkt(regi,emiMkt)$(cm_pfmGapClosure = 1);
         loop(ttot$p45_pfmBoundYr(ttot),
-          s45_pfmTarget = p45_pfmPhiMkt(regi,emiMkt)
+          s45_pfmTarget = (p45_pfmPhiMktPath(ttot,regi,emiMkt)$(cm_pfmPhiPath = 1) + p45_pfmPhiMkt(regi,emiMkt)$(cm_pfmPhiPath = 0))
                         * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
           if(ttot.val > s45_pfmBoundSeedYr,
             s45_pfmLamEff = 1;

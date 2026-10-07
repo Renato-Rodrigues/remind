@@ -1570,6 +1570,22 @@ parameter
 ;
   cm_pfmBoundRebuild = 0;      !! def = 0  !! regexp = 0|1
 
+*** cm_pfmPhiPath  Read the feasibility share as a PATH phi(t) (the v6 coupling, pfm design note 0005,
+***                ADR 0049 / 0054)?
+***                 0 = one share per region and market (p45_regiDiff_phi, p45_pfmPhiMkt): the v5
+***                     formulation. DEFAULT, so every earlier run reproduces bit for bit.
+***                 1 = the share path p45_pfmPhiPath(ttot,regi) and p45_pfmPhiMktPath(ttot,regi,emiMkt)
+***                     the R side exports for a v6 Run-Group (phi-anchor.rds). Mode 1 builds the ratio
+***                     from the path (no closure rate: lambda is 0 in v6, ADR 0050); the mode-2 rebuild
+***                     (cm_pfmBoundRebuild = 1, rule C) builds its target from the path, in presolve and
+***                     in the postsolve Step IV.4 mirror. Mode 3 is retired from v6.
+***                 Set 1 on every row whose pfmGroup is a v6 group: the R side stops a v6 call that is
+***                 told 0, because the rebuild would otherwise run on the 2025 value alone.
+parameter
+  cm_pfmPhiPath   "0 = one feasibility share per region (v5), 1 = the share path phi(t) of the v6 coupling"
+;
+  cm_pfmPhiPath = 0;      !! def = 0  !! regexp = 0|1
+
 *** cm_pfmAnchorFromGdx  Pin the global anchor to the one another run converged to.
 ***                 off = the anchor is built from cm_taxCO2_startyear / cm_peakBudgYr as usual.
 ***                 on  = after Parts I-II of functionalForm/datainput.gms, p45_taxCO2eq_anchor is

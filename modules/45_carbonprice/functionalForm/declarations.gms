@@ -96,6 +96,18 @@ p45_regiDiff_lambda_aux(all_regi)           "auxiliary parameter for loading the
 *** to the pre-ADR-0042 behaviour.
   p45_pfmPhiMkt(all_regi,all_emiMkt)           "per-market feasibility share (its own sector's, not the floor's)"
   p45_pfmPhiMkt_aux(all_regi,all_emiMkt)       "as loaded from the PFM gdx"
+*** The v6 share PATH (cm_pfmPhiPath = 1; pfm design note 0005 D14, ADR 0054). ttot first, as every
+*** time-indexed coupling symbol. Inert with the switch off.
+  p45_pfmPhiPath(ttot,all_regi)                "v6: feasibility share path phi(t), the floor over sectors"
+  p45_pfmPhiPath_aux(ttot,all_regi)            "as loaded from the PFM gdx"
+  p45_pfmPhiMktPath(ttot,all_regi,all_emiMkt)  "v6: per-market share path, never below the floor"
+  p45_pfmPhiMktPath_aux(ttot,all_regi,all_emiMkt) "as loaded from the PFM gdx"
+  p45_pfmPhiPath_iter(iteration,ttot,all_regi) "v6: the floor share path in use, per iteration"
+*** Peak-budget record (pfm design note 0005 E11, PITFALLS 26): a PEAK budget is met on the peak of
+*** cumulative CO2, and a run whose cumulative CO2 is still rising at the horizon end never peaked.
+  p45_pfmBudgetPeak_iter(iteration)            "max over ttot of pm_actualbudgetco2, GtCO2"
+  p45_pfmBudgetPeakYr_iter(iteration)          "year of that maximum"
+  p45_pfmBudgetNoPeak_iter(iteration)          "1 when the maximum sits at the last period: cumulative CO2 never peaked"
 *** Each market's OWN closure rate. Modes 2 and 3 carry it implicitly - both receive a
 *** finished PRICE PATH from R, built per sector. Mode 1 rebuilds its path here in GAMS
 *** from phi and a rate, so it needs the rate as a symbol or it silently reuses
