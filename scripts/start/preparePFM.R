@@ -148,6 +148,17 @@ preparePFM <- function(cfg, verbose = TRUE) {
     file.remove(file.path(dest, "phi-override.yml"))
   }
 
+  # The v6 anchor artifact (pfm design note 0005 C6/F6): q, the regional ranking and the lean
+  # frontier design, written by the pfm-anchor step. Copied when the Run-Group has one; a stale one
+  # from a reused run folder is removed, so a v5 group can never pick up a v6 anchor.
+  anSrc <- file.path(src, "phi-anchor.rds")
+  if (file.exists(anSrc)) {
+    file.copy(anSrc, file.path(dest, "phi-anchor.rds"), overwrite = TRUE)
+    say("anchor artifact phi-anchor.rds copied")
+  } else if (file.exists(file.path(dest, "phi-anchor.rds"))) {
+    file.remove(file.path(dest, "phi-anchor.rds"))
+  }
+
   # The panel the deployed spec was fitted on, addressed by the hash in the manifest.
   mf <- jsonlite::read_json(file.path(dest, "manifest.json"))
   panel <- paste0("panel_", mf$panel_hash, ".rds")
