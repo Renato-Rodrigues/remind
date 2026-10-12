@@ -1527,7 +1527,7 @@ parameter
 ***                 "the gap closes at 7.7%/yr" is not a measurement this project can defend.
 ***                 Setting 1 is the declared SENSITIVITY, and it is not a small one: on the v5
 ***                 batch it moves mode R's regional spread from 1.88x to 1.10x (EU21) and raises
-***                 the mode-L rule-B cost from +128 to +192 Gt CO2.
+***                 the mode-L hold-the-price cost from +128 to +192 Gt CO2.
 ***
 ***                 Passed to R via pfm-coupling-runtime.yml, so it is set here ONLY - an
 ***                 .Rprofile copy that disagreed would produce a complete, wrong run.
@@ -1549,10 +1549,10 @@ parameter
 ***                       bound(t) = min(Pref(t) + delta(t), A(t)),
 ***                     with Pref = p45_taxCO2eq_path_gdx_ref and A = p45_taxCO2eq_anchor - the
 ***                     formula of pfm::exportFeasibilityBound(), reproduced to 3.5e-7 on the v5
-***                     gdx (rule B and gap-closure runs). Same per market with p45_pfmPhiMkt.
-***                     Rule B is unaffected (its anchor does not move after the last call), and
+***                     gdx (hold the price and gap-closure runs). Same per market with p45_pfmPhiMkt.
+***                     Hold the price is unaffected (its anchor does not move after the last call), and
 ***                     bind modes 1 and 3 ignore the switch.
-***                 DEFAULT 0 so the published batch reproduces bit for bit; set 1 on rule-C rows.
+***                 DEFAULT 0 so the published batch reproduces bit for bit; set 1 on hold-the-budget rows.
 ***                 Diagnostics per iteration: p45_pfmBoundLive_iter, p45_pfmBoundR_iter,
 ***                 p45_pfmBoundMktLive_iter, p45_pfmAnchorPath_iter, p45_pfmBoundCheck_iter,
 ***                 p45_pfmBoundDrift_iter (declarations.gms).
@@ -1568,7 +1568,7 @@ parameter
 ***                 1 = the share path p45_pfmPhiPath(ttot,regi) and p45_pfmPhiMktPath(ttot,regi,emiMkt)
 ***                     the R side exports for a v6 Run-Group (phi-anchor.rds). Mode 1 builds the ratio
 ***                     from the path (no closure rate: lambda is 0 in v6, ADR 0050); the mode-2 rebuild
-***                     (cm_pfmBoundRebuild = 1, rule C) builds its target from the path, in presolve and
+***                     (cm_pfmBoundRebuild = 1, hold the budget) builds its target from the path, in presolve and
 ***                     in the postsolve Step IV.4 mirror. Mode 3 is retired from v6.
 ***                 Set 1 on every row whose pfmGroup is a v6 group: the R side stops a v6 call that is
 ***                 told 0, because the rebuild would otherwise run on the 2025 value alone.

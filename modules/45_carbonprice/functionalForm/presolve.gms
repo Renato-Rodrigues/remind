@@ -310,7 +310,7 @@ if(cm_taxCO2_regiDiff = 11,
 *** Why. The R side ships the cap as an ABSOLUTE price, P_ref + phi (A - P_ref), evaluated at the
 *** anchor A of its call, and it is not called again once phi has converged. Under a
 *** budget-forced run the anchor keeps moving, so the cap stopped following the formula it is
-*** defined by: in the v5 rule-C runs the anchor ended 0.72-0.85x its value at the last call, and
+*** defined by: in the v5 hold-the-budget runs the anchor ended 0.72-0.85x its value at the last call, and
 *** at theta = 0.325 it doubled against a flat cap and the budget loop stalled (SI S18).
 ***
 *** What. The same recursion as pfm::exportFeasibilityBound(), in GAMS, from the frozen phi and
@@ -617,7 +617,7 @@ if(cm_taxCO2_regiDiff = 11,
 *** (2) Budget iteration diverging: the rescale factor should approach 1 as the anchor
 *** settles. Persistently far from 1 means the budget cannot be met by rescaling, which
 *** under bind mode 2 is the expected consequence of a binding political cap.
-*** NOTE this still will not catch the 2026-08-26/29 rule-C failure even with the raw
+*** NOTE this still will not catch the 2026-08-26/29 hold-the-budget failure even with the raw
 *** factor: it sat at 1.249, and |1.249 - 1| = 0.249 is inside the 0.5 threshold. That is
 *** deliberate - 0.5 is a blow-up threshold, and a loop can be hopelessly stuck at a modest
 *** factor. Detector (4) is the one that catches "stuck"; this one catches "exploding".
@@ -642,7 +642,7 @@ if(cm_taxCO2_regiDiff = 11,
   );
 
 *** (4) The budget loop is STUCK, which is what the 2026-08-26/29 batch actually did and
-*** what neither (1) nor (2) caught. All four rule-C runs ended on cm_iteration_max between
+*** what neither (1) nor (2) caught. All four hold-the-budget runs ended on cm_iteration_max between
 *** 118 and 288 Gt CO2 over a 1000 Gt budget whose tolerance is 2 Gt, and reported
 *** o_modelstat = 2, pm_pfmInfesCode = 0, pm_pfmConverged = 1. TODO.md item 17.
 ***
@@ -655,7 +655,7 @@ if(cm_taxCO2_regiDiff = 11,
 *** Reads the PREVIOUS iteration's entries: both o45_diff_to_Budg and the bind share are
 *** written after this point in the loop. o45_diff_to_Budg is written only inside
 *** postsolve's cm_iterative_target_adj block, so it stays 0 in the adj = 0 family and this
-*** check is self-gating - a rule-B run cannot trip it.
+*** check is self-gating - a hold-the-price run cannot trip it.
   if((pm_pfmInfesCode = 0) and (ord(iteration) > 20) and (cm_pfmBindMode = 2),
     if((abs(sum(iteration2$(ord(iteration2) eq ord(iteration) - 1),
                 o45_diff_to_Budg(iteration2))) > 10 * cm_budgetCO2_absDevTol) and
@@ -678,7 +678,7 @@ if(cm_taxCO2_regiDiff = 11,
 *** behaviour, and so a reader who checks only the infeasibility code cannot be misled.
 ***
 *** Same self-gating as (4): o45_diff_to_Budg is written only inside postsolve's
-*** cm_iterative_target_adj block, so it stays 0 in the adj = 0 family and a rule-B run
+*** cm_iterative_target_adj block, so it stays 0 in the adj = 0 family and a hold-the-price run
 *** cannot raise this. No patience counter - unlike an infeasibility, one iteration at the
 *** cap IS the whole event, because there is no iteration after it.
   if((ord(iteration) >= cm_iteration_max) and (cm_iterative_target_adj > 0),
@@ -734,7 +734,7 @@ if(cm_taxCO2_regiDiff = 11,
       / max(1, sum((t,regi)$(t.val ge cm_startyear), 1));
   );
 *** Mode 1 (pfm design note 0005 E12): the share of region-periods whose price the ratio holds below
-*** the anchor - the mode-1 analogue of the mode-2 bind share, so rule B's ratio runs report it too.
+*** the anchor - the mode-1 analogue of the mode-2 bind share, so the hold-the-price proportional-mode runs report it too.
   if(cm_pfmBindMode = 1,
     p45_pfmBindShare_iter(iteration) =
       sum((t,regi)$(t.val ge cm_startyear), 1$(p45_regiDiff_ratio(t,regi) < 1 - 1e-6))
