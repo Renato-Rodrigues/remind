@@ -39,8 +39,8 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # Institution-projection rule (cfg$pfmInstitutions, scenario column `pfmInstitutions`).
   institutions <- as.character(cfg$pfmInstitutions %||% "")
   if (!nzchar(institutions)) institutions <- "storyline"
-  if (!institutions %in% c("storyline", "convergence", "hold")) {
-    stop("preparePFM: cfg$pfmInstitutions must be storyline, convergence or hold, got '",
+  if (!institutions %in% c("storyline", "convergence", "hold", "gapclosure")) {
+    stop("preparePFM: cfg$pfmInstitutions must be storyline, convergence, hold or gapclosure, got '",
          institutions, "'")
   }
   #
