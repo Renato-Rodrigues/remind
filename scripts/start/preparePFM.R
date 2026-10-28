@@ -43,6 +43,13 @@ preparePFM <- function(cfg, verbose = TRUE) {
     stop("preparePFM: cfg$pfmInstitutions must be storyline, convergence, hold, gapclosure or gapclosureAndrijevic, got '",
          institutions, "'")
   }
+  # How REMIND's fossil rents are valued for a group with fossil rents in its panel (pfm ADR 0061): the region's own
+  # price (default) or the world price (the sensitivity). Scenario column `pfmRentsPrice`; written only when set.
+  rentsPrice <- as.character(cfg$pfmRentsPrice %||% "")
+  if (length(rentsPrice) != 1 || is.na(rentsPrice)) rentsPrice <- ""
+  if (nzchar(rentsPrice) && !rentsPrice %in% c("regional", "world")) {
+    stop("preparePFM: cfg$pfmRentsPrice must be regional or world, got '", rentsPrice, "'")
+  }
   #
   # Region mapping: the run's own, so the coupling can never deliver at a different
   # resolution than the model solves at.
@@ -218,7 +225,8 @@ preparePFM <- function(cfg, verbose = TRUE) {
     paste0("weightYear: ", gv("weightYear", "PFM_WEIGHT_YEAR", 2025)),
     # institutions: the projection rule for institution series without an SSP projection
     # (cfg$pfmInstitutions, column `pfmInstitutions`); pfm::pfmInstitutionProjection().
-    paste0("institutions: ", institutions)
+    paste0("institutions: ", institutions),
+    if (nzchar(rentsPrice)) paste0("rentsPrice: ", rentsPrice)
   )
   # The v6 coupling's options (pfm design note 0005 F8; pfm::pfmV6CouplingDefaults), from the scenario
   # row's columns pfmFormulation, pfmPhiHoldYear, pfmPhiHold, pfmPhiSpread, pfmPhiOrdering,
