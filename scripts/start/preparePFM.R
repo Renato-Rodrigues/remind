@@ -50,6 +50,15 @@ preparePFM <- function(cfg, verbose = TRUE) {
   if (nzchar(rentsPrice) && !rentsPrice %in% c("regional", "world")) {
     stop("preparePFM: cfg$pfmRentsPrice must be regional or world, got '", rentsPrice, "'")
   }
+  # Where the reference price P_ref comes from (column `pfmRefPrice`): input_ref.gdx (default, path_gdx_ref) or
+  # input_refpolicycost.gdx (path_gdx_refpolicycost). A sequential step fixes its past to the previous step through
+  # path_gdx_ref, so it reads the current-policy price from the policy-cost reference instead.
+  refPrice <- as.character(cfg$pfmRefPrice %||% "")
+  if (length(refPrice) != 1 || is.na(refPrice) || !nzchar(refPrice)) refPrice <- "ref"
+  if (!refPrice %in% c("ref", "refpolicycost")) {
+    stop("preparePFM: cfg$pfmRefPrice must be ref or refpolicycost, got '", refPrice, "'")
+  }
+  refFile <- paste0("input_", refPrice, ".gdx")
   #
   # Region mapping: the run's own, so the coupling can never deliver at a different
   # resolution than the model solves at.
@@ -59,7 +68,7 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # Reference gdx: REMIND already copies path_gdx_ref into the run folder as
   # input_ref.gdx, so bind mode 2 needs no new switch and no copy of ours - it is
   # already there, already relative, already self-contained.
-  refRun <- file.path(cfg$results_folder, "input_ref.gdx")
+  refRun <- file.path(cfg$results_folder, refFile)
 
   coupled <- identical(as.character(cfg$gms$cm_taxCO2_regiDiff %||% ""), "11")
   if (!coupled) return(invisible(FALSE))
@@ -230,11 +239,11 @@ preparePFM <- function(cfg, verbose = TRUE) {
   )
   # The v6 coupling's options (pfm design note 0005 F8; pfm::pfmV6CouplingDefaults), from the scenario
   # row's columns pfmFormulation, pfmPhiHoldYear, pfmPhiHold, pfmPhiSpread, pfmPhiOrdering,
-  # pfmPhiOrderingSeed, pfmPhiKappa, pfmPhiStrength. Written only when set, so every existing row
+  # pfmPhiOrderingSeed, pfmPhiKappa, pfmPhiStrength, pfmPhiWindowEnd. Written only when set, so every existing row
   # keeps the headline values; pfm validates them and echoes them in the log.
   v6cols <- c(formulation = "pfmFormulation", phiHoldYear = "pfmPhiHoldYear", phiHold = "pfmPhiHold",
               phiSpread = "pfmPhiSpread", phiOrdering = "pfmPhiOrdering", phiOrderingSeed = "pfmPhiOrderingSeed",
-              phiKappa = "pfmPhiKappa", phiStrength = "pfmPhiStrength")
+              phiKappa = "pfmPhiKappa", phiStrength = "pfmPhiStrength", phiWindowEnd = "pfmPhiWindowEnd")
   for (k in names(v6cols)) {
     v <- as.character(cfg[[v6cols[[k]]]] %||% "")
     if (length(v) == 1 && nzchar(v) && !is.na(v)) cfgLines <- c(cfgLines, paste0(k, ": ", v))
@@ -245,11 +254,11 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # was never written - which made bind modes 2 and 3 refuse at iteration 15 even though
   # the file was sitting right there by then. iterativePFM() validates it at run time,
   # where the answer is actually knowable, so a declared-but-absent path is safe.
-  cfgLines <- c(cfgLines, "refGdx: input_ref.gdx")
+  cfgLines <- c(cfgLines, paste0("refGdx: ", refFile))
   if (file.exists(refRun)) {
-    say("reference price path: input_ref.gdx (already present)")
+    say("reference price path: ", refFile, " (already present)")
   } else {
-    say("reference price path: input_ref.gdx (REMIND copies it in later; ",
+    say("reference price path: ", refFile, " (REMIND copies it in later; ",
         "iterativePFM checks at run time)")
   }
   say("derived from the run: ssp = ", ssp, ", regionmapping = ", rmap)
