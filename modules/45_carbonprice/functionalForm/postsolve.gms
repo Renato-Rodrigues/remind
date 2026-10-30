@@ -470,7 +470,7 @@ if(cm_taxCO2_regiDiff = 11,
       s45_pfmLam = p45_regiDiff_lambda(regi)$(cm_pfmGapClosure = 1);
       loop(ttot$p45_pfmBoundYr(ttot),
         s45_pfmTarget = (p45_pfmPhiPath(ttot,regi)$(cm_pfmPhiPath = 1) + p45_regiDiff_phi(regi)$(cm_pfmPhiPath = 0))
-                      * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
+                      * max(p45_taxCO2eq_anchor(ttot) - p45_pfmPriceRef(ttot,regi), 0);
         if(ttot.val > s45_pfmBoundSeedYr,
           s45_pfmLamEff = 1;
           if((s45_pfmLam > 0) and (s45_pfmLam < 1),
@@ -479,7 +479,7 @@ if(cm_taxCO2_regiDiff = 11,
           s45_pfmDelta = s45_pfmDelta + s45_pfmLamEff * (s45_pfmTarget - s45_pfmDelta);
         );
         s45_pfmPrevYr = ttot.val;
-        p45_pfmPriceBound(ttot,regi) = min(p45_taxCO2eq_path_gdx_ref(ttot,regi) + s45_pfmDelta,
+        p45_pfmPriceBound(ttot,regi) = min(p45_pfmPriceRef(ttot,regi) + s45_pfmDelta,
                                            p45_taxCO2eq_anchor(ttot));
       );
     );
@@ -490,7 +490,7 @@ if(cm_taxCO2_regiDiff = 11,
         s45_pfmLam = p45_pfmLambdaMkt(regi,emiMkt)$(cm_pfmGapClosure = 1);
         loop(ttot$p45_pfmBoundYr(ttot),
           s45_pfmTarget = (p45_pfmPhiMktPath(ttot,regi,emiMkt)$(cm_pfmPhiPath = 1) + p45_pfmPhiMkt(regi,emiMkt)$(cm_pfmPhiPath = 0))
-                        * max(p45_taxCO2eq_anchor(ttot) - p45_taxCO2eq_path_gdx_ref(ttot,regi), 0);
+                        * max(p45_taxCO2eq_anchor(ttot) - p45_pfmPriceRef(ttot,regi), 0);
           if(ttot.val > s45_pfmBoundSeedYr,
             s45_pfmLamEff = 1;
             if((s45_pfmLam > 0) and (s45_pfmLam < 1),
@@ -499,7 +499,7 @@ if(cm_taxCO2_regiDiff = 11,
             s45_pfmDelta = s45_pfmDelta + s45_pfmLamEff * (s45_pfmTarget - s45_pfmDelta);
           );
           s45_pfmPrevYr = ttot.val;
-          p45_pfmPriceBoundMkt(ttot,regi,emiMkt) = min(p45_taxCO2eq_path_gdx_ref(ttot,regi) + s45_pfmDelta,
+          p45_pfmPriceBoundMkt(ttot,regi,emiMkt) = min(p45_pfmPriceRef(ttot,regi) + s45_pfmDelta,
                                                        p45_taxCO2eq_anchor(ttot));
         );
       );

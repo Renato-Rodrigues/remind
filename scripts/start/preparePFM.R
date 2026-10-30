@@ -50,13 +50,28 @@ preparePFM <- function(cfg, verbose = TRUE) {
   if (nzchar(rentsPrice) && !rentsPrice %in% c("regional", "world")) {
     stop("preparePFM: cfg$pfmRentsPrice must be regional or world, got '", rentsPrice, "'")
   }
-  # Where the reference price P_ref comes from (column `pfmRefPrice`): input_ref.gdx (default, path_gdx_ref) or
-  # input_refpolicycost.gdx (path_gdx_refpolicycost). A sequential step fixes its past to the previous step through
-  # path_gdx_ref, so it reads the current-policy price from the policy-cost reference instead.
-  refPrice <- as.character(cfg$pfmRefPrice %||% "")
-  if (length(refPrice) != 1 || is.na(refPrice) || !nzchar(refPrice)) refPrice <- "ref"
+  # Where the reference price P_ref comes from: input_ref.gdx (default, path_gdx_ref) or input_refpolicycost.gdx
+  # (path_gdx_refpolicycost). A sequential step fixes its past to the previous step through path_gdx_ref, so it reads
+  # the current-policy price from the policy-cost reference instead. The GAMS switch cm_pfmRefPrice decides, because
+  # the GAMS rebuild of the cap (cm_pfmBoundRebuild) must use the same P_ref as the R side (2026-10-30: it did not,
+  # and the hold-the-budget 2040 step aborted). The older column `pfmRefPrice` is read when the switch is unset, and
+  # the two must agree when both are set.
+  norm <- function(x) { x <- as.character(x %||% ""); if (length(x) != 1 || is.na(x)) "" else trimws(x) }
+  refGms <- norm(cfg$gms$cm_pfmRefPrice); refCol <- norm(cfg$pfmRefPrice)
+  if (nzchar(refGms) && nzchar(refCol) && !identical(refGms, refCol)) {
+    stop("preparePFM: cm_pfmRefPrice = '", refGms, "' but pfmRefPrice = '", refCol, "' - R and GAMS would read P_ref ",
+         "from different runs. Set cm_pfmRefPrice only.")
+  }
+  # Only a run that rebuilds the cap in GAMS (hold the budget) reads P_ref there; a hold-the-price step configured with
+  # the column alone (the first v8 submission, still chaining) is unaffected and goes on.
+  if (nzchar(refCol) && !nzchar(refGms) && !identical(refCol, "ref") &&
+      identical(norm(cfg$gms$cm_pfmBoundRebuild), "1")) {
+    stop("preparePFM: pfmRefPrice = '", refCol, "' without cm_pfmRefPrice - the GAMS rebuild of the cap ",
+         "(cm_pfmBoundRebuild = 1) would still read P_ref from path_gdx_ref. Set cm_pfmRefPrice = ", refCol, ".")
+  }
+  refPrice <- if (nzchar(refGms)) refGms else if (nzchar(refCol)) refCol else "ref"
   if (!refPrice %in% c("ref", "refpolicycost")) {
-    stop("preparePFM: cfg$pfmRefPrice must be ref or refpolicycost, got '", refPrice, "'")
+    stop("preparePFM: cm_pfmRefPrice must be ref or refpolicycost, got '", refPrice, "'")
   }
   refFile <- paste0("input_", refPrice, ".gdx")
   #

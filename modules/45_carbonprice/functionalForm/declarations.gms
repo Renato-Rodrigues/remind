@@ -157,6 +157,7 @@ p45_regiDiff_lambda_aux(all_regi)           "auxiliary parameter for loading the
   p45_pfmPriceBoundR(ttot,all_regi)                "mode-2 cap exactly as the R side last delivered it, T$/GtC"
   p45_pfmPriceBoundMktR(ttot,all_regi,all_emiMkt)  "per-market cap exactly as the R side last delivered it, T$/GtC"
   p45_pfmBoundYr(ttot)                             "1 for the periods the R side builds the cap over (those with an anchor), the recursion domain"
+  p45_pfmPriceRef(ttot,all_regi)                   "reference price Pref of the rebuilt cap: path_gdx_ref, or path_gdx_refpolicycost when cm_pfmRefPrice = refpolicycost, T$/GtC"
   p45_pfmCalledNow                                 "1 if the R side was called in THIS iteration's presolve"
 *** Per-iteration record of the rebuild, for debugging. Written by presolve and again by
 *** postsolve Step IV.4; where both run in an iteration, the postsolve entry (the cap the NEXT

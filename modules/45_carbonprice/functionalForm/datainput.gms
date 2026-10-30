@@ -15,6 +15,13 @@ if( not ((cm_iterative_target_adj = 0) or (cm_iterative_target_adj eq 5) or (cm_
 Execute_Loadpoint 'input_ref' p45_taxCO2eq_path_gdx_ref = pm_taxCO2eq;
 display p45_taxCO2eq_path_gdx_ref;
 
+*** Pref of the rebuilt mode-2 cap (cm_pfmBoundRebuild = 1): the same gdx the R coupling reads (cm_pfmRefPrice, main.gms)
+p45_pfmPriceRef(ttot,regi) = p45_taxCO2eq_path_gdx_ref(ttot,regi);
+$ifThen.pfmRefPrice "%cm_pfmRefPrice%" == "refpolicycost"
+Execute_Loadpoint 'input_refpolicycost' p45_pfmPriceRef = pm_taxCO2eq;
+display "45_carbonprice: Pref of the mode-2 cap from input_refpolicycost.gdx (cm_pfmRefPrice = refpolicycost)", p45_pfmPriceRef;
+$endIf.pfmRefPrice
+
 *** -------- initial declaration of parameters for iterative target adjustment
 o45_reached_until2150pricepath(iteration) = 0;
 

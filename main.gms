@@ -1547,7 +1547,8 @@ parameter
 ***                       delta(t) = delta(t-1) + lamEff * (phi * max(A(t) - Pref(t), 0) - delta(t-1)),
 ***                       delta(seed) = 0, lamEff = 1 - (1 - lambda)^dt (1 when lambda = 0),
 ***                       bound(t) = min(Pref(t) + delta(t), A(t)),
-***                     with Pref = p45_taxCO2eq_path_gdx_ref and A = p45_taxCO2eq_anchor - the
+***                     with Pref = p45_pfmPriceRef (path_gdx_ref, or path_gdx_refpolicycost under
+***                     cm_pfmRefPrice = refpolicycost) and A = p45_taxCO2eq_anchor - the
 ***                     formula of pfm::exportFeasibilityBound(), reproduced to 3.5e-7 on the v5
 ***                     gdx (hold the price and gap-closure runs). Same per market with p45_pfmPhiMkt.
 ***                     Hold the price is unaffected (its anchor does not move after the last call), and
@@ -1589,6 +1590,18 @@ parameter
 ***                 the PFM steps build regional prices on it. Used by the FIXPRICE rows
 ***                 (TODO.md 14g): the budget-consistent price path without typing it into a CSV.
 $setGlobal cm_pfmAnchorFromGdx  off    !! def = off  !! regexp = off|on
+
+*** cm_pfmRefPrice  Where the reference (current-policy) price Pref of the bind-mode-2 cap comes from.
+***                 ref           = path_gdx_ref (input_ref.gdx), the default.
+***                 refpolicycost = path_gdx_refpolicycost (input_refpolicycost.gdx). A sequential step fixes its
+***                                 past to the previous step through path_gdx_ref, so path_gdx_ref is no longer
+***                                 the current-policy run and its price is not Pref.
+***                 Read by BOTH sides: scripts/start/preparePFM.R hands the same gdx to the R coupling (refGdx), and
+***                 the GAMS rebuild of the cap (cm_pfmBoundRebuild = 1) takes Pref from p45_pfmPriceRef, loaded from
+***                 that gdx. Before 2026-10-30 the rebuild always used path_gdx_ref: in the hold-the-budget step of
+***                 2040 Pref was then the 2030 step's uncapped price, every market's cap equalled it and the
+***                 markup check aborted. The scenario column pfmRefPrice is read as a fallback by preparePFM.R.
+$setGlobal cm_pfmRefPrice  ref    !! def = ref  !! regexp = ref|refpolicycost
 
 *' cm_rcp_scen       "chooses RCP scenario"
 *'
