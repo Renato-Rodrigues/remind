@@ -258,7 +258,8 @@ preparePFM <- function(cfg, verbose = TRUE) {
   # keeps the headline values; pfm validates them and echoes them in the log.
   v6cols <- c(formulation = "pfmFormulation", phiHoldYear = "pfmPhiHoldYear", phiHold = "pfmPhiHold",
               phiSpread = "pfmPhiSpread", phiOrdering = "pfmPhiOrdering", phiOrderingSeed = "pfmPhiOrderingSeed",
-              phiKappa = "pfmPhiKappa", phiStrength = "pfmPhiStrength", phiWindowEnd = "pfmPhiWindowEnd")
+              phiKappa = "pfmPhiKappa", phiStrength = "pfmPhiStrength", phiWindowEnd = "pfmPhiWindowEnd",
+              phiStrengthGdx = "pfmPhiStrengthGdx")
   for (k in names(v6cols)) {
     v <- as.character(cfg[[v6cols[[k]]]] %||% "")
     if (length(v) == 1 && nzchar(v) && !is.na(v)) cfgLines <- c(cfgLines, paste0(k, ": ", v))
