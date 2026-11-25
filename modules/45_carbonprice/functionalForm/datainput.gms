@@ -255,6 +255,23 @@ $endif
   display p45_regiDiff_phi, p45_regiDiff_lambda;
 );
 
+*** Warm start (cm_pfmWarmStart = 1, main.gms): replace the empty start above by the shares, closure rates and
+*** mode-2 cap the run in path_gdx ended with (input.gdx is its fulldata.gdx). After the defaults and the include,
+*** so nothing above overwrites them; before Step III.1, which builds the ratio path from the shares. Everything
+*** else in this block is rebuilt by the first PFM call. Fails loudly if the donor carries no coupled state.
+if((cm_taxCO2_regiDiff = 11) and (cm_pfmWarmStart = 1),
+  Execute_Loadpoint 'input' p45_regiDiff_phi, p45_regiDiff_lambda, p45_pfmPhiMkt, p45_pfmLambdaMkt,
+                            p45_pfmPhiPath, p45_pfmPhiMktPath,
+                            p45_pfmPriceBound, p45_pfmPriceBoundR, p45_pfmPriceBoundMkt, p45_pfmPriceBoundMktR;
+  if(smin(regi, p45_regiDiff_phi(regi)) >= 1,
+    abort "45_carbonprice: cm_pfmWarmStart = 1 but input.gdx carries no coupled shares (all phi = 1) - is path_gdx a coupled run?";
+  );
+  if((cm_pfmBindMode = 2) and (smax((ttot,regi), p45_pfmPriceBound(ttot,regi)) <= 0),
+    abort "45_carbonprice: cm_pfmWarmStart = 1 in mode 2 but input.gdx carries no cap (p45_pfmPriceBound) - is path_gdx a mode-2 coupled run?";
+  );
+  display "45_carbonprice: warm start - shares and cap loaded from input.gdx", p45_regiDiff_phi, p45_pfmPhiPath;
+);
+
 *** Step III.1: Determine p45_regiDiff_startYr and p45_regiDiff_initialRatio based on cm_taxCO2_regiDiff and cm_taxCO2_regiDiff_startyearValue
 
 $ifThen.taxCO2regiDiff1 "%cm_taxCO2_regiDiff_startyearValue%" == "endogenous"

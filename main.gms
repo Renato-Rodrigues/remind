@@ -1603,6 +1603,20 @@ $setGlobal cm_pfmAnchorFromGdx  off    !! def = off  !! regexp = off|on
 ***                 markup check aborted. The scenario column pfmRefPrice is read as a fallback by preparePFM.R.
 $setGlobal cm_pfmRefPrice  ref    !! def = ref  !! regexp = ref|refpolicycost
 
+*** cm_pfmWarmStart  Restart a coupled run from the state another coupled run ended in (2026-11-25).
+***                 0 = the shares start at 1 (uncoupled) and, in mode 2, no cap exists until the first PFM call
+***                     (c_pfmIter): the warm-up iterations solve the uncapped pathway. DEFAULT, every earlier run.
+***                 1 = functionalForm/datainput.gms loads from input.gdx - set path_gdx to the run to restart from -
+***                     the shares (p45_regiDiff_phi, p45_pfmPhiMkt, p45_pfmPhiPath, p45_pfmPhiMktPath), the closure
+***                     rates and the mode-2 cap that run ended with, so the warm-up iterations solve the capped
+***                     pathway REMIND's own solution was started on. For runs that stopped at the iteration cap in
+***                     a limit cycle. The PFM history is NOT carried over: the run's convergence test is its own
+***                     (at least two PFM calls in this run, the change between two of them), as in every other run.
+parameter
+  cm_pfmWarmStart   "0 = coupled shares and cap start empty, 1 = loaded from input.gdx (restart from the run in path_gdx)"
+;
+  cm_pfmWarmStart = 0;      !! def = 0  !! regexp = 0|1
+
 *' cm_rcp_scen       "chooses RCP scenario"
 *'
 *' *  (none): no RCP scenario, standard setting
